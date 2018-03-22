@@ -55,6 +55,7 @@
             .item {
                 width: 33%;
                 height: 100%;
+                border: 1px dashed #ccc;
 
                 &.active {
                     border: 1px dashed red;
@@ -132,14 +133,16 @@
                      :type="item.type"
                      v-for="(item, index) in right_forms"
                      draggable="true"
-                     @dragstart="onDragStart($event, item.type + ':' + item.name + ':' + item.index, item.token)"
-                     @drop="onDrop($event, index)"
-                     @dragenter="onDragEnter($event, index)"
-                     @dragleave="onDragLeave($event, index)"
-                     @dragend="onDragEnd">
+                     @dragstart.self="onDragStart($event, item.type + ':' + item.name + ':' + item.index, item.token)"
+                     @drop.self="onDrop($event, index)"
+                     @dragenter.self="onDragEnter($event, index)"
+                     @dragleave.self="onDragLeave($event, index)"
+                     @dragend.self="onDragEnd">
                     {{item.name + '' + item.index}}
                     <div class="item"
                          v-for="(val ,i) in item.children"
+                         draggable="true"
+                         @dragstart.self="onDragStart($event, val.type + ':' + val.name + ':' + val.index, val.token)"
                          @drop="onDropChildren($event, index, i)"
                          @dragenter="onDragEnterChildren"
                          @dragleave="onDragLeaveChildren"
@@ -334,7 +337,7 @@
              * @param index
              * @param i
              */
-            onDrop(e, index) {
+            onDrop(e, index) {console.log('drag')
                 if(e.preventDefault) {
                     e.preventDefault();
                 }
@@ -344,6 +347,7 @@
                 const type = text.split(':')[0];
                 const name = text.split(':')[1];
                 let count = text.split(':')[2];
+                //拖拽表单元素
                 if(type !== 'three') {
                     if (count === '0') {
                         count = 1;
@@ -361,12 +365,28 @@
                         token: Math.random() * 999 + 1
                     });
                     this.right_forms = this.right_forms.filter(item => {
-                        return item.token != this.token;
+                        return !item.token || item.token != this.token;
+                    });
+                    this.right_forms.forEach((item, index) => {
+                        if(item.type === 'three') {
+                            item.children.forEach((val, i) => {
+                                if(val.token === this.token) {
+                                    this.right_forms[index].children[i] = {
+                                        type: '',
+                                        name: '',
+                                        index: '',
+                                        token: '',
+                                    }
+                                }
+                            })
+                        }
                     });
                     e.target.style.border = '1px dashed #ccc';
-                }else {
+                }
+                //拖拽布局容器
+                else {
                     this.$set(this.right_forms, index, {
-                        type: '',
+                        type: 'three',
                         name: '',
                         index: '',
                         token: '',
@@ -375,6 +395,7 @@
                     for (let i = 0; i < 3; i++) {
                         this.right_forms[index].children.push({type: '', name: '', index: ''});
                     }
+                    $(e.target).attr('draggable', false);
                 }
             },
             onDragEnd(e) {
@@ -392,11 +413,50 @@
              * @param index
              * @param i
              */
-            onDropChildren(e, index, i) {
+            onDropChildren(e, index, i) {console.log('drag-children')
                 if(e.preventDefault) {
                     e.preventDefault();
                 }
-               this.right_forms[index].children[i] = {}
+
+                const text = e.dataTransfer.getData('text/plain');
+
+                const type = text.split(':')[0];
+                const name = text.split(':')[1];
+                let count = text.split(':')[2];
+                if (count === '0') {
+                    count = 1;
+                    this.right_forms[index].children.forEach((item, i) => {
+                        if (item.type === type) {
+                            count++;
+                        }
+                    });
+
+                }
+
+                this.$set(this.right_forms[index].children, i, {
+                    type: type,
+                    name: name,
+                    index: count,
+                    token: Math.random() * 999 + 1
+                });
+                this.right_forms = this.right_forms.filter(item => {
+                    return !item.token || item.token != this.token;
+                });
+                this.right_forms.forEach((item, index) => {
+                   if(item.type === 'three') {
+                       item.children.forEach((val, i) => {
+                           if(val.token === this.token) {
+                               this.right_forms[index].children[i] = {
+                                   type: '',
+                                   name: '',
+                                   index: '',
+                                   token: '',
+                               }
+                           }
+                       })
+                   }
+                });
+                e.target.style.border = '1px dashed #ccc';
             },
             onPreview() {
                 this.showPreview = true;
