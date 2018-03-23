@@ -24,10 +24,10 @@
         }
     }
 
-    .left, .right {
+    .left, .right, .edit {
         width: 500px;
         height: 800px;
-        margin-left: 300px;
+        margin-left: 100px;
         float: left;
         border: 1px solid #ccc;
     }
@@ -62,6 +62,11 @@
                 }
             }
         }
+    }
+    .edit-title {
+        text-align: left;
+        font-weight: bold;
+        padding: 10px;
     }
 </style>
 <template>
@@ -137,8 +142,10 @@
                      @drop.self="onDrop($event, index)"
                      @dragenter.self="onDragEnter($event, index)"
                      @dragleave.self="onDragLeave($event, index)"
-                     @dragend.self="onDragEnd">
-                    {{item.name + '' + item.index}}
+                     @dragend.self="onDragEnd"
+                    @click.self="onEdit(item.type, index, '')"
+                >
+                    {{item.name}}<span style="color: #ccc">{{item.placeholder}}</span>
                     <div class="item"
                          v-for="(val ,i) in item.children"
                          draggable="true"
@@ -146,8 +153,27 @@
                          @drop="onDropChildren($event, index, i)"
                          @dragenter="onDragEnterChildren"
                          @dragleave="onDragLeaveChildren"
-                    >{{val.name + '' + val.index}}</div>
+                         @click="onEdit(val.type, index, i)"
+                    >{{val.name}}<span style="color: #ccc">{{val.placeholder}}</span></div>
                 </div>
+            </div>
+            <div class="edit">
+                <div class="edit-title">标题</div>
+                <Input v-model="currentOptions.name"></Input>
+                <div class="edit-title">提示</div>
+                <Input v-model="currentOptions.placeholder"></Input>
+                <div class="edit-title" v-if="currentType === 'checkbox' || currentType === 'radio'">选项</div>
+                <div v-for="(item, index) in list"  v-if="currentType === 'checkbox' || currentType === 'radio'">
+                    <Input v-model="item.label"></Input>
+                    <Icon type="plus-circled" size="30" @click.native="onAdd"></Icon>
+                    <Icon type="minus-circled" size="30" @click.native="onDel(index)"></Icon>
+                </div>
+                <div class="edit-title" v-if="currentType === 'datepicker'">格式</div>
+                <RadioGroup v-model="currentOptions.date_formate"  v-if="currentType === 'datepicker'">
+                    <Radio label="time">年-月-日 时:分</Radio>
+                    <Radio label="date">年-月-日</Radio>
+                    <Radio label="month">年-月</Radio>
+                </RadioGroup>
             </div>
             <Button @click="onPreview">预览</Button>
         </div>
@@ -205,7 +231,14 @@
                 right_forms: [{type: '', name: '', index: ''}],
                 showPreview: false,
                 targetY: 0,
-                token: 0
+                token: 0,
+                currentType: '',
+                currentIndex: '',
+                currentChildrenIndex: '',
+                currentOptions: {},
+                showEdit: false,
+                list: [],
+                date_formate: ''
             }
         },
         methods: {
@@ -360,9 +393,10 @@
 
                     this.$set(this.right_forms, index, {
                         type: type,
-                        name: name,
+                        name: name + count,
                         index: count,
-                        token: Math.random() * 999 + 1
+                        token: Math.random() * 999 + 1,
+                        list: type === 'radio' || type === 'checkbox' ? [{label: ''},{label: ''},{label: ''}] : ''
                     });
                     this.right_forms = this.right_forms.filter(item => {
                         return !item.token || item.token != this.token;
@@ -375,7 +409,7 @@
                                         type: '',
                                         name: '',
                                         index: '',
-                                        token: '',
+                                        token: ''
                                     }
                                 }
                             })
@@ -435,9 +469,10 @@
 
                 this.$set(this.right_forms[index].children, i, {
                     type: type,
-                    name: name,
+                    name: name + count,
                     index: count,
-                    token: Math.random() * 999 + 1
+                    token: Math.random() * 999 + 1,
+                    list: type === 'radio' || type === 'checkbox' ? [{label: ''},{label: ''},{label: ''}] : ''
                 });
                 this.right_forms = this.right_forms.filter(item => {
                     return !item.token || item.token != this.token;
@@ -450,7 +485,7 @@
                                    type: '',
                                    name: '',
                                    index: '',
-                                   token: '',
+                                   token: ''
                                }
                            }
                        })
@@ -460,6 +495,36 @@
             },
             onPreview() {
                 this.showPreview = true;
+            },
+            /**
+             *
+             * @param type
+             * @param index
+             * @param i
+             */
+            onEdit(type, index, i) {
+                this.showEdit = true;
+                this.currentType = type;
+                this.currentIndex = index;
+                this.currentChildrenIndex = i;
+                this.currentOptions = i !== '' ? this.right_forms[index].children[i] : this.right_forms[index];
+                if(type === 'radio' || type === 'checkbox') {
+                    if(this.currentChildrenIndex !== '') {
+                        this.list = this.right_forms[this.currentIndex].children[this.currentChildrenIndex].list;
+                    }else {
+                        this.list = this.right_forms[this.currentIndex].list;
+                    }
+                }
+            },
+            onAdd() {
+                this.list.push({label: ''});
+            },
+            /**
+             *
+             * @param index
+             */
+            onDel(index) {
+                this.list.splice(index, 1);
             }
         },
         watch: {
@@ -482,7 +547,12 @@
                     arr.push(obj);
                 }
                 this.lines = arr;
-            }
+            },
+//            list(val) {
+//                if(this.currentChildrenIndex !== '') {
+//                    this.right_forms[this.currentIndex].children[this.currentChildrenIndex].list = val;
+//                }else
+//            }
         }
     };
 </script>
