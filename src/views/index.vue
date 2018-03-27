@@ -33,14 +33,16 @@
     }
 
     .left {
-        div {
-            width: 100px;
-            height: 100px;
-            line-height: 100px;
-            text-align: center;
-            float: left;
-            background: #eee;
-            border: 1px solid #ccc;
+        .left-content {
+            div {
+                width: 100%;
+                height: 50px;
+                line-height: 50px;
+                text-align: center;
+                float: left;
+                background: #eee;
+                border: 1px solid #ccc;
+            }
         }
     }
     .right {
@@ -51,22 +53,41 @@
             text-align: left;
             display: flex;
             flex-direction: row;
+            margin-bottom: 10px;
+            border: 1px dashed #ccc;
 
             .item {
-                width: 33%;
                 height: 100%;
                 border: 1px dashed #ccc;
+
+                &.three {
+                    width: 33%;
+                }
+
+                &.two {
+                    width: 50%;
+                }
 
                 &.active {
                     border: 1px dashed red;
                 }
             }
+
+            &.empty {
+                border: 1px dashed red;
+            }
         }
+    }
+    .right-item-children {
+        display: flex;flex-direction: row; margin-bottom: 10px
     }
     .edit-title {
         text-align: left;
         font-weight: bold;
         padding: 10px;
+    }
+    .tree-children {
+        width: 30%;
     }
 </style>
 <template>
@@ -127,26 +148,46 @@
         </div>
         <div v-else>
             <div class="left">
-                <div draggable="true"
-                     v-for="item in left_forms"
-                     @dragstart="onDragStart($event, item.type + ':' + item.name + ':' + 0)"
-                >{{item.name}}</div>
+                <div class="left-title">
+                    <RadioGroup v-model="left_tab">
+                        <Radio label="table">
+                            <span>布局控件</span>
+                        </Radio>
+                        <Radio label="form">
+                            <span>字段控件</span>
+                        </Radio>
+                    </RadioGroup>
+                </div>
+                <div class="left-content">
+                    <div draggable="true"
+                         v-if="left_tab === 'form'"
+                         v-for="item in left_forms"
+                         @dragstart="onDragStart($event, item.type + ':' + item.name + ':' + 0)"
+                    >{{item.name}}</div>
+                    <div draggable="true"
+                         v-if="left_tab === 'table'"
+                         v-for="item in left_tables"
+                         @dragstart="onDragStart($event, item.type + ':' + item.name + ':' + 0)"
+                    >{{item.name}}</div>
+                </div>
 
             </div>
-            <div class="right"  @dragover="onDragOver"  @dragenter="onDragEnterContainer">
+            <div class="right"  @dragover="onDragOver"  @dragenter="onDragEnterContainer" @dragleave="onDragLeaveContainer" @drop.self="onDropContainer">
                 <div class="right-item"
                      :type="item.type"
+                     :class="{empty: !item.type}"
                      v-for="(item, index) in right_forms"
                      draggable="true"
                      @dragstart.self="onDragStart($event, item.type + ':' + item.name + ':' + item.index, item.token)"
                      @drop.self="onDrop($event, index)"
-                     @dragenter.self="onDragEnter($event, index)"
-                     @dragleave.self="onDragLeave($event, index)"
+                     @dragenter="onDragEnter($event, index)"
+                     @dragleave="onDragLeave($event, index, item.type)"
                      @dragend.self="onDragEnd"
-                    @click.self="onEdit(item.type, index, '')"
+                     @click.self="onEdit(item.type, index, '')"
                 >
                     {{item.name}}<span style="color: #ccc">{{item.placeholder}}</span>
                     <div class="item"
+                         :class="{two: item.children.length === 2, three: item.children.length === 3}"
                          v-for="(val ,i) in item.children"
                          draggable="true"
                          @dragstart.self="onDragStart($event, val.type + ':' + val.name + ':' + val.index, val.token)"
@@ -160,8 +201,8 @@
             <div class="edit">
                 <div class="edit-title">标题</div>
                 <Input v-model="currentOptions.name"></Input>
-                <div class="edit-title">提示</div>
-                <Input v-model="currentOptions.placeholder"></Input>
+                <div class="edit-title" v-if="currentType !== 'checkbox' && currentType !== 'radio'">提示</div>
+                <Input v-model="currentOptions.placeholder" v-if="currentType !== 'checkbox' && currentType !== 'radio'"></Input>
                 <div class="edit-title" v-if="currentType === 'checkbox' || currentType === 'radio'">选项</div>
                 <div v-for="(item, index) in list"  v-if="currentType === 'checkbox' || currentType === 'radio'">
                     <Input v-model="item.label"></Input>
@@ -170,36 +211,55 @@
                 </div>
                 <div class="edit-title" v-if="currentType === 'datepicker'">格式</div>
                 <RadioGroup v-model="currentOptions.date_formate"  v-if="currentType === 'datepicker'">
-                    <Radio label="time">年-月-日 时:分</Radio>
+                    <Radio label="datetime">年-月-日 时:分</Radio>
                     <Radio label="date">年-月-日</Radio>
                     <Radio label="month">年-月</Radio>
                 </RadioGroup>
             </div>
             <Button @click="onPreview">预览</Button>
         </div>
-
+        <input id="biuuu_button" type="button" value="打印"></input>
+        <div id="myPrintArea">.....文本打印部分.....</div> <div class="quote_title">引用</div><div class="quote_div"></div>
         <Modal
                 v-model="showPreview"
-                title="Common Modal dialog box title"
+                title="预览"
+                width="700"
         >
             <div class="right-item" v-for="(item, index) in right_forms">
-                <Input v-if="item.type === 'input'" placeholder="Enter something..." style="width: 200px"></Input>
+                <div v-if="!item.children && !!item.type">
+                    <span style="font-weight: bold">{{item.name}}:</span>
+                    <Input v-if="item.type === 'input'"  :placeholder="item.placeholder" ></Input>
 
-                <Input v-if="item.type === 'textarea'" type="textarea" style="width: 200px" placeholder="Enter something..."></Input>
+                    <Input v-if="item.type === 'textarea'" type="textarea"   :placeholder="item.placeholder"></Input>
 
-                <RadioGroup  v-if="item.type === 'radio'">
-                    <Radio label="金斑蝶" disabled></Radio>
-                    <Radio label="爪哇犀牛"></Radio>
-                    <Radio label="印度黑羚"></Radio>
-                </RadioGroup>
+                    <RadioGroup  v-if="item.type === 'radio'">
+                        <Radio v-for="val in item.list" :label="val.label"></Radio>
+                    </RadioGroup>
 
-                <CheckboxGroup  v-if="item.type === 'checkbox'">
-                    <Checkbox label="香蕉" disabled></Checkbox>
-                    <Checkbox label="苹果" disabled></Checkbox>
-                    <Checkbox label="西瓜"></Checkbox>
-                </CheckboxGroup>
+                    <CheckboxGroup  v-if="item.type === 'checkbox'">
+                        <Checkbox v-for="val in item.list" :label="val.label"></Checkbox>
+                    </CheckboxGroup>
 
-                <DatePicker v-if="item.type === 'datepicker'" type="date" placeholder="Select date" style="width: 200px"></DatePicker>
+                    <DatePicker v-if="item.type === 'datepicker'" :placeholder="item.placeholder" :type="item.date_formate" placeholder="Select date" ></DatePicker>
+                </div>
+                <div v-else-if="!!item.type" class="right-item-children">
+                    <div v-for="children in item.children" class="tree-children">
+                        <span style="font-weight: bold">{{children.name}}:</span>
+                        <Input v-if="children.type === 'input'"  :placeholder="children.placeholder"></Input>
+
+                        <Input v-if="children.type === 'textarea'" type="textarea"  :placeholder="children.placeholder"></Input>
+
+                        <RadioGroup  v-if="children.type === 'radio'">
+                            <Radio v-for="val in children.list" :label="val.label"></Radio>
+                        </RadioGroup>
+
+                        <CheckboxGroup  v-if="children.type === 'checkbox'">
+                            <Checkbox v-for="val in children.list" :label="val.label"></Checkbox>
+                        </CheckboxGroup>
+
+                        <DatePicker v-if="children.type === 'datepicker'" :placeholder="children.placeholder" :type="children.date_formate" placeholder="Select date" ></DatePicker>
+                    </div>
+                </div>
             </div>
         </Modal>
     </div>
@@ -220,15 +280,28 @@
                 flows: [[],[]],
                 tab: 'form',
                 left_forms: [
-                    {name: '单行输入框', type: 'input'},
-                    {name: '多行输入框', type: 'textarea'},
-                    {name: '单选框', type: 'radio'},
-                    {name: '多选框', type: 'checkbox'},
+                    {name: '单行文本输入框', type: 'input'},
+                    {name: '多行文本框', type: 'textarea'},
+                    {name: '单选', type: 'radio'},
+                    {name: '复选', type: 'checkbox'},
                     {name: '日期选择', type: 'datepicker'},
-                    {name: '三栏', type: 'three'}
+                    {name: '描述性文字', type: 'datepicker'},
+                    {name: '分割线', type: 'datepicker'},
+                    {name: '下拉菜单', type: 'datepicker'},
+                    {name: '金额', type: 'datepicker'},
+                    {name: '数字', type: 'datepicker'},
+                    {name: '运算控件', type: 'datepicker'},
+                    {name: '日期', type: 'datepicker'},
+                    {name: '附件', type: 'datepicker'},
+                    {name: '关联表单', type: 'datepicker'},
+                    {name: '表格', type: 'datepicker'}
+                ],
+                left_tables: [
+                    {name: '一行两列', type: 'two'},
+                    {name: '一行三列', type: 'three'}
                 ],
                 dragTarget: '',
-                right_forms: [{type: '', name: '', index: ''}],
+                right_forms: [],
                 showPreview: false,
                 targetY: 0,
                 token: 0,
@@ -238,8 +311,16 @@
                 currentOptions: {},
                 showEdit: false,
                 list: [],
-                date_formate: ''
+                date_formate: '',
+                left : true,
+                inside: false,
+                left_tab: 'form'
             }
+        },
+        mounted() {
+            $("#biuuu_button").click(function () {console.log('print')
+                $("#myPrintArea").printArea();
+            });
         },
         methods: {
             /**
@@ -317,6 +398,9 @@
                 e.dataTransfer.setData('text/plain', id);
                 if(token) {
                     this.token = token;
+                    this.left = false;
+                }else {
+                    this.left = true;
                 }
             },
             onDragOver(e) {
@@ -328,35 +412,31 @@
                 return false;
             },
             onDragEnter(e, index) {
-                if (e.y >= this.targetY) {
+                if (e.y >= this.targetY) {console.log('enter up ' + index)
                     if(!!this.right_forms[index - 1] && !this.right_forms[index - 1].type) {
                         this.right_forms.splice(index - 1, 1);
                     }
-                }else {
+                }else {console.log('enter down ' + index)
                     if(!!this.right_forms[index + 1] && !this.right_forms[index + 1].type) {
                         this.right_forms.splice(index + 1, 1);
                     }
                 }
-                e.target.style.border = '1px dashed red';
             },
-            onDragEnterContainer(e) {
-                if(!!this.right_forms[this.right_forms.length - 1].type) {
-                    this.right_forms.push({type: '', name: '', index: ''})
-                }
-            }
             /**
              * 拖拽离开目标
              * @param e
              * @param index
              */
-            ,onDragLeave(e, index) {
-                e.target.style.border = 'none';
+            onDragLeave(e, index, type) {
+                if(type === 'three' || type === 'two') {
+                    return null;
+                }
                 if(!!this.right_forms[index] && !!this.right_forms[index].type) {
                     if (e.y > this.targetY && ((this.right_forms.length > index + 1 && !!this.right_forms[index + 1].type) || this.right_forms.length === index + 1)) {
                         this.right_forms.splice(index + 1, 0, {type: '', name: '', index: ''});
                     } else if(e.y < this.targetY && ((index > 0 && !!this.right_forms[index - 1].type) || index === 0)) {
                         if (index > 0) {
-                            this.right_forms.splice(index - 1, 0, {type: '', name: '', index: ''});
+                            this.right_forms.splice(index, 0, {type: '', name: '', index: ''});
                         } else {
                             this.right_forms.unshift({type: '', name: '', index: ''});
                         }
@@ -370,18 +450,18 @@
              * @param index
              * @param i
              */
-            onDrop(e, index) {console.log('drag')
+            onDrop(e, index) {console.log('drop')
                 if(e.preventDefault) {
                     e.preventDefault();
                 }
-
+                this.inside = false;
                 const text = e.dataTransfer.getData('text/plain');
 
                 const type = text.split(':')[0];
                 const name = text.split(':')[1];
                 let count = text.split(':')[2];
                 //拖拽表单元素
-                if(type !== 'three') {
+                if(type !== 'three' && type !== 'two') {
                     if (count === '0') {
                         count = 1;
                         this.right_forms.forEach((item, i) => {
@@ -415,10 +495,9 @@
                             })
                         }
                     });
-                    e.target.style.border = '1px dashed #ccc';
                 }
                 //拖拽布局容器
-                else {
+                else if(type === 'three'){
                     this.$set(this.right_forms, index, {
                         type: 'three',
                         name: '',
@@ -430,7 +509,23 @@
                         this.right_forms[index].children.push({type: '', name: '', index: ''});
                     }
                     $(e.target).attr('draggable', false);
+                }else if(type === 'two'){
+                    this.$set(this.right_forms, index, {
+                        type: 'two',
+                        name: '',
+                        index: '',
+                        token: '',
+                        children: []
+                    });
+                    for (let i = 0; i < 2; i++) {
+                        this.right_forms[index].children.push({type: '', name: '', index: ''});
+                    }
+                    $(e.target).attr('draggable', false);
                 }
+                this.right_forms = this.right_forms.filter(item => {
+                    return item.type !== '';
+                });
+                $(e.target).removeClass('active');
             },
             onDragEnd(e) {
 
@@ -451,7 +546,7 @@
                 if(e.preventDefault) {
                     e.preventDefault();
                 }
-
+                this.inside = false;
                 const text = e.dataTransfer.getData('text/plain');
 
                 const type = text.split(':')[0];
@@ -478,7 +573,7 @@
                     return !item.token || item.token != this.token;
                 });
                 this.right_forms.forEach((item, index) => {
-                   if(item.type === 'three') {
+                   if(item.type === 'three' || item.type === 'two') {
                        item.children.forEach((val, i) => {
                            if(val.token === this.token) {
                                this.right_forms[index].children[i] = {
@@ -491,7 +586,32 @@
                        })
                    }
                 });
-                e.target.style.border = '1px dashed #ccc';
+                this.right_forms = this.right_forms.filter(item => {
+                    return item.type !== '';
+                })
+            },
+            onDragEnterContainer(e) {
+                if(!this.left || this.inside) {
+                    return null;
+                }
+                this.inside = true;
+                if(!this.right_forms.length || !!this.right_forms[this.right_forms.length - 1].type) {
+                    this.right_forms.push({type: '', name: '', index: ''})
+                }
+            },
+            onDragLeaveContainer(e) {
+                if(!this.left || this.inside) {
+                    return null;
+                }
+                this.right_forms = this.right_forms.filter(item => {
+                    return item.type !== '';
+                })
+            },
+            onDropContainer(e) {console.log('drop con')
+                if(!this.left) {
+                    return null;
+                }
+                this.onDrop(e, this.right_forms.length - 1)
             },
             onPreview() {
                 this.showPreview = true;

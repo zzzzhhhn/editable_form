@@ -21,6 +21,11 @@ module.exports = merge(webpackBaseConfig, {
             filename: '[name].[hash].css',
             allChunks: true
         }),
+        new webpack.ProvidePlugin({
+            $: 'jquery',
+            jQuery: 'jquery',
+            'window.jQuery': 'jquery'
+        }),
         new webpack.optimize.CommonsChunkPlugin({
             name: 'vendors',
             filename: 'vendors.[hash].js'
