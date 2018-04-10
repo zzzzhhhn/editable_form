@@ -196,8 +196,7 @@
                  @click.self="onEdit(item.type, index, '', '')"
             >
                 <Icon type="close-circled" v-if="!item.children" @click.native="onDeleteForm(index)" style="position: absolute;right: 0;top: 0;"></Icon>
-                {{item.title}}<span style="color: #ccc">{{item.placeholder}}</span>
-
+                <form-item :form_item="item"></form-item>
                 <ButtonGroup class="right-item-menu" size="small" v-if="item.type === 'detail' || item.type === 'table'">
                     <Button>{{item.type === 'detail' ? '编辑明细表' : '编辑表格'}}</Button>
                     <Button @click.native="onAddCol(item.type, index)">添加列</Button>
@@ -237,14 +236,14 @@
                               @dragleave="onDragLeaveChildren"
                               @click.self="onEdit(val.type, index,rowIndex, i)"
                          >
-                        {{val.title}}{{item.type}}<span style="color: #ccc">{{val.placeholder}}</span>
+                             <form-item :form_item="val"></form-item>
                         </div>
                         <div class="wj-clear"></div>
                     </div>
                     <Icon type="close-circled" @click.native="onDeleteChildrenForm(index, i)" style="position: absolute;right: 0; top: 0px" v-if="item.type !== 'detail' && item.type !== 'table'"></Icon>
 
                 </div>
-
+                <!--<preview-form v-for="(item, index) in right_forms"  :key="index" :form_item="item"></preview-form>-->
             </div>
         </div>
         <div class="edit">
@@ -278,7 +277,7 @@
                                currentType === 'salary_adjust_reason' ||
                                  currentType === 'salary_adjust_item'">
                         <div class="edit-title">选项设置</div>
-                        <div v-for="(item, index) in list"  :key="item.value">
+                        <div v-for="(item, index) in currentOptions.list"  :key="item.value">
                             <Input v-model="item.label"></Input>
                             <Icon type="plus-circled" size="30" @click.native="onAdd"></Icon>
                             <Icon type="minus-circled" size="30" @click.native="onDel(index)"></Icon>
@@ -359,7 +358,7 @@
                 </span>
             </span>
         </div>
-        <Button @click="onPreview">预览</Button>
+
 
         <input id="biuuu_button" type="button" value="打印"></input>
         <div id="myPrintArea">
@@ -368,9 +367,6 @@
             <div class="quote_title"  style="width: 500px; height: 800px; border: 1px solid red">引用</div><div class="quote_div"></div>
         </div>
 
-        <Modal v-model="showPreview" title="预览" width="700">
-            <!--<preview-form v-for="(item, index) in right_forms"  :key="index" :form_item="item"></preview-form>-->
-        </Modal>
     </div>
 
 
@@ -378,9 +374,10 @@
 </template>
 <script>
     import previewForm from './preview-form.vue';
+    import formItem from './form-item.vue';
     export default {
         components: {
-            previewForm
+            previewForm, formItem
         },
         data() {
             return {
@@ -394,7 +391,7 @@
                 left_forms: [
                     {title: '单行文本输入框', type: 'input'},
                     {title: '多行文本框', type: 'textarea'},
-                    {title: '描述性文字', type: 'describe'},
+                    {title: '描述性文字', type: 'describe', placeholder: '描述性文字'},
                     {title: '分割线', type: 'line'},
                     {title: '单选', type: 'radio'},
                     {title: '复选', type: 'checkbox'},
@@ -418,7 +415,6 @@
                 ],
                 dragTarget: '',
                 right_forms: [],
-                showPreview: false,
                 targetY: 0,
                 token: 0,
                 currentType: '',
@@ -620,8 +616,9 @@
                         type: type,
                         title: this.left ? title + count : title,
                         index: count,
+                        placeholder: type === 'describe' ? '描述性文字' : '',
                         token: Date.parse(new Date()),
-                        list: type === 'radio' || type === 'checkbox' ? [{label: ''},{label: ''},{label: ''}] : ''
+                        list: ['radio', type === 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())}] : ''
                     });
                     this.right_forms = this.right_forms.filter(item => {
                         return !item.token || item.token != this.token;
@@ -806,8 +803,9 @@
                     type: type,
                     title: title + count,
                     index: count,
+                    placeholder: type === 'describe' ? '描述性文字' : '',
                     token: Date.parse(new Date()),
-                    list: type === 'radio' || type === 'checkbox' ? [{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())}] : ''
+                    list: ['radio', type === 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())}] : ''
                 });
                 this.clearDrop();
                 $(e.target).removeClass('active');
@@ -836,9 +834,6 @@
                 }
                 this.onDrop(e, this.right_forms.length - 1)
             },
-            onPreview() {
-                this.showPreview = true;
-            },
             /**
              *
              * @param type
@@ -850,7 +845,7 @@
                 this.currentType = type;
                 this.currentIndex = index;
                 this.currentChildrenIndex = i;
-                this.currentOptions = rowIndex ? this.right_forms[index].children[rowIndex][i] : i !== '' ? this.right_forms[index].children[i] : this.right_forms[index];
+                this.currentOptions = rowIndex !== '' ? this.right_forms[index].children[rowIndex][i] : i !== '' ? this.right_forms[index].children[i] : this.right_forms[index];console.log(this.currentOptions)
                 if(type === 'radio' || type === 'checkbox' || type === 'select') {
                     if(rowIndex !== '') {
                         this.list = this.right_forms[this.currentIndex].children[rowIndex][i].list;
@@ -964,8 +959,9 @@
                     type: type,
                     title: title + count,
                     index: count,
+                    placeholder: type === 'describe' ? '描述性文字' : '',
                     token: Date.parse(new Date()),
-                    list: type === 'radio' || type === 'checkbox' ? [{label: ''},{label: ''},{label: ''}] : ''
+                    list: ['radio', type === 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())}] : ''
                 });
 
                 this.clearDrop();
