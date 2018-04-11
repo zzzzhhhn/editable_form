@@ -2,6 +2,12 @@
     .wj-clear {
         clear: left;
     }
+    .icon-form-close {
+        position: absolute;
+        right: 0;
+        top: 0;
+        z-index: 9;
+    }
     .index {
         width: 200px;
         margin: auto;
@@ -30,7 +36,6 @@
     .left, .right, .edit {
         width: 500px;
         height: 800px;
-        margin-left: 100px;
         float: left;
         border: 1px solid #ccc;
     }
@@ -55,6 +60,7 @@
         }
     }
     .right {
+        width: 800px;
         .right-item {
             min-height: 50px;
             line-height: 50px;
@@ -79,7 +85,6 @@
                     height: 100%;
                     border: 1px dashed #ccc;
                     position: relative;
-                    float: left;
 
                     &.table {
                         border: 1px solid #000;
@@ -142,6 +147,9 @@
             display: block;
         }
     }
+    .pull-left {
+        float: left;
+    }
 </style>
 <template>
     <div style="text-align: center">
@@ -187,25 +195,25 @@
                  :class="{empty: !item.type}"
                  v-for="(item, index) in right_forms"
                  :key="index"
-                 draggable="true"
-                 @dragstart.self="onDragStart($event, item.type + ':' + item.title + ':' + item.index, item.token)"
+                 :draggable="item.draggable"
+                 @dragstart.self="onDragStart($event, item.type + ':' + item.title + ':' + item.index, item.token, index)"
                  @drop.self="onDrop($event, index)"
                  @dragenter="onDragEnter($event, index)"
-                 @dragleave.self="onDragLeave($event, index, item.type)"
+                 @dragleave="onDragLeave($event, index, item.type)"
                  @dragend.self="onDragEnd"
-                 @click.self="onEdit(item.type, index, '', '')"
+                 @click="onEdit(item.type, index, '', '')"
             >
-                <Icon type="close-circled" v-if="!item.children" @click.native="onDeleteForm(index)" style="position: absolute;right: 0;top: 0;"></Icon>
-                <form-item :form_item="item"></form-item>
-                <ButtonGroup class="right-item-menu" size="small" v-if="item.type === 'detail' || item.type === 'table'">
+                <Icon type="close-circled" v-if="['detail', 'table'].indexOf(item.type) === -1" @click.native="onDeleteForm(index)" class="icon-form-close"></Icon>
+                <form-item :form_item="item" v-if="item.type !== ''"></form-item>
+                <ButtonGroup class="right-item-menu" size="small" v-if="['detail', 'table'].indexOf(item.type) !== -1">
                     <Button>{{item.type === 'detail' ? '编辑明细表' : '编辑表格'}}</Button>
                     <Button @click.native="onAddCol(item.type, index)">添加列</Button>
                     <Button v-if="item.type === 'table'" @click.native="onAddRow(index)">添加行</Button>
                     <Button @click.native="onDeleteForm(index)">删除表格</Button>
                 </ButtonGroup>
 
-                <div class="right-children-container" v-if="item.type !== 'table' && item.type !== 'employee_change' && item.type !== 'salary_adjust' && !!item.children">
-                    <div class="item"
+                <div class="right-children-container" v-if="['table', 'employee_change', 'salary_adjust'].indexOf(item.type) ===  -1 && !!item.children">
+                    <div class="item pull-left"
                          :class="{one: item.children.length === 1,two: item.children.length === 2, three: item.children.length === 3, four: item.children.length === 4,
                          five: item.children.length === 5, six: item.children.length === 6, table: item.type === 'table' || item.type === 'detail'}"
                          v-for="(val ,i) in item.children"
@@ -215,35 +223,33 @@
                          @drop="onDropChildren($event, index, i)"
                          @dragenter="onDragEnterChildren"
                          @dragleave="onDragLeaveChildren"
-                         @click.self="onEdit(val.type, index, '', i)"
+                         @click="onEdit(val.type, index, '', i, $event)"
                     >
-                        <Icon type="close-circled" @click.native="onDeleteChildrenForm(index, i)" style="position: absolute;right: 0; top: 0px;"></Icon>
-                        {{val.title}}{{item.type}}<span style="color: #ccc">{{val.placeholder}}</span>
+                        <Icon type="close-circled" @click.native="onDeleteChildrenForm(index, i)" class="icon-form-close"></Icon>
+                        <form-item :form_item="val"></form-item>
                     </div>
                     <div class="wj-clear"></div>
                 </div>
-                <div  class="right-children-container" v-else-if="(item.type === 'table' || item.type === 'employee_change' || item.type === 'salary_adjust') && !!item.children">
-                    <div v-for="(row, rowIndex) in item.children" :key="rowIndex">
-                         <div class="item"
+                <table  class="right-children-container" v-else-if="[ 'table', 'employee_change', 'salary_adjust'].indexOf(item.type) !== -1">
+                    <tr v-for="(row, rowIndex) in item.children" :key="rowIndex">
+                         <td class="item"
                               :class="{one: row.length === 1,two: row.length === 2, three: row.length === 3, four: row.length === 4,
                          five: row.length === 5, six: row.length === 6, table: item.type === 'table' || item.type === 'detail'}"
                               v-for="(val ,i) in row"
                               :key="i"
-                              draggable="true"
+                             :draggable="val.draggable"
                               @dragstart.self="onDragStart($event, val.type + ':' + val.title + ':' + val.index, val.token)"
                               @drop="onDropTableChildren($event, index, rowIndex, i)"
                               @dragenter="onDragEnterChildren"
                               @dragleave="onDragLeaveChildren"
-                              @click.self="onEdit(val.type, index,rowIndex, i)"
+                              @click="onEdit(val.type, index,rowIndex, i, $event)"
                          >
                              <form-item :form_item="val"></form-item>
-                        </div>
+                        </td>
                         <div class="wj-clear"></div>
-                    </div>
-                    <Icon type="close-circled" @click.native="onDeleteChildrenForm(index, i)" style="position: absolute;right: 0; top: 0px" v-if="item.type !== 'detail' && item.type !== 'table'"></Icon>
+                    </tr>
+                </table>
 
-                </div>
-                <!--<preview-form v-for="(item, index) in right_forms"  :key="index" :form_item="item"></preview-form>-->
             </div>
         </div>
         <div class="edit">
@@ -367,6 +373,11 @@
             <div class="quote_title"  style="width: 500px; height: 800px; border: 1px solid red">引用</div><div class="quote_div"></div>
         </div>
 
+        <Checkbox v-model="showPreview">预览</Checkbox>
+
+        <Modal v-model="showPreview" title="预览" width="700">
+            <preview-form v-if="showPreview" v-for="(item, index) in right_forms"  :key="index" :form_item="item"></preview-form>
+        </Modal>
     </div>
 
 
@@ -380,14 +391,7 @@
             previewForm, formItem
         },
         data() {
-            return {
-                width: 200,
-                count:2,
-                lines:[
-                    {x1:50, y1:0, x2: 0, y2: 100},
-                    {x1:150, y1:0, x2: 200, y2: 100},
-                ],
-                flows: [[],[]],
+            return {showPreview: false,
                 left_forms: [
                     {title: '单行文本输入框', type: 'input'},
                     {title: '多行文本框', type: 'textarea'},
@@ -419,6 +423,7 @@
                 token: 0,
                 currentType: '',
                 currentIndex: '',
+                startIndex: '',             //被拖拽元素Index
                 currentChildrenIndex: '',
                 currentOptions: {},
                 showEdit: false,
@@ -464,82 +469,16 @@
             });
         },
         methods: {
-            /**
-             * 增加条件
-             */
-            onAddFlow() {
-                this.count++;
-                this.flows.push([]);
-            },
-            /**
-             * 减少条件
-             */
-            onDeleteFlow() {
-                if(this.count > 2) {
-                    this.count--;
-                    this.flows.pop();
-                }
-            },
-            /**
-             * 增加节点
-             */
-            onAddNode(index) {
-                this.flows[index].push({title: '张三' + Math.ceil(Math.random() * 10), children: [], lines: []});
-            },
-            /**
-             * 减少节点
-             * @param index
-             */
-            onDeleteNode(index) {
-                this.flows[index].pop();
-            },
-            /**
-             * 节点分叉
-             */
-            onAddNodeFlow(index, i) {
-                if(!this.flows[index][i].lines.length) {
-                    this.flows[index][i].lines = [
-                        {x1:50, y1:0, x2: 0, y2: 100},
-                        {x1:150, y1:0, x2: 200, y2: 100},
-                    ];
-                    this.flows[index][i].children = [[],[]];
-                }else {
-                    const count = this.flows[index][i].lines.length + 1;
-                    this.flows[index][i].width = 50 * count;
-                    const width = this.flows[index][i].width;
-                    const center = (count - 1) / 2;
-                    const arr = [];
-                    for (let i = 0; i < count; i++) {
-                        const obj = {y1: 0, y2: 50};
-                        if(i < center) {
-                            obj.x1 = (i + 1) * width/(count + 1);
-                            obj.x2 = i * width/(count + 1);
-                        }else if(i === center) {
-                            obj.x1 = width / 2;
-                            obj.x2 = width / 2;
-                        }else {
-                            obj.x1 = (i + 1) * width/(count + 1);
-                            obj.x2 = (i + 2) * width/(count + 1);
-                        }
-                        arr.push(obj);
-                    }
-                    this.flows[index][i].lines = arr;
-                    this.flows[index][i].children.push([]);
-
-                }
-            },
-            /**
-             * 节点减少分叉
-             */
-            onDeleteNodeFlow(index, i) {
-
-            },
-            onDragStart(e, id, token) {
+            /*
+            * 拖拽开始
+            */
+            onDragStart(e, id, token, index) {
                 e.dataTransfer.effectAllowed = 'copy';
                 e.dataTransfer.setData('text/plain', id);
                 if(token) {
                     this.token = token;
                     this.left = false;
+                    this.startIndex = index;
                 }else {
                     this.left = true;
                 }
@@ -553,13 +492,19 @@
                 return false;
             },
             onDragEnter(e, index) {
-                if (e.y >= this.targetY) {console.log('enter up ' + index)
+                if (e.y >= this.targetY) {
                     if(!!this.right_forms[index - 1] && !this.right_forms[index - 1].type) {
                         this.right_forms.splice(index - 1, 1);
+                        if(!this.right_forms[index -1].children) {
+                            this.right_forms.splice(index, 0, {type: '', title: '', index: ''});
+                        }
                     }
-                }else {console.log('enter down ' + index)
+                }else {
                     if(!!this.right_forms[index + 1] && !this.right_forms[index + 1].type) {
                         this.right_forms.splice(index + 1, 1);
+                        if(!this.right_forms[index].children) {
+                            this.right_forms.splice(index, 0, {type: '', title: '', index: ''});
+                        }
                     }
                 }
             },
@@ -569,19 +514,22 @@
              * @param index
              */
             onDragLeave(e, index, type) {
-                if(type === 'three' || type === 'two' || type === 'table' || type === 'detail') {
+                if(this.startIndex === index) {
                     return null;
                 }
+                const check_type = ['three', 'two', 'table', 'detail'].indexOf(type) !== -1;        //判断目标是否为表格类控件
+                const check_table_down = (check_type && e.y > e.target.offsetTop + 25) || !check_type;       //判断是否从底部离开时，表格类插件要额外判断光标是否处于目标控件div下半部分
+                const check_table_up = (check_type && e.y < e.target.offsetTop + 25) || !check_type;       //判断是否从顶部离开时，表格类插件要额外判断光标是否处于目标控件div上半部分
+                //判断目标控件是否已被拖拽入内容
                 if(!!this.right_forms[index] && !!this.right_forms[index].type) {
-                    if (e.y > this.targetY && ((this.right_forms.length > index + 1 && !!this.right_forms[index + 1].type) || this.right_forms.length === index + 1)) {
+                    if ((e.y > this.targetY && ((this.right_forms.length > index + 1 && !!this.right_forms[index + 1].type) || this.right_forms.length === index + 1)) && check_table_down) {
                         this.right_forms.splice(index + 1, 0, {type: '', title: '', index: ''});
-                    } else if(e.y < this.targetY && ((index > 0 && !!this.right_forms[index - 1].type) || index === 0)) {
+                    } else if(e.y < this.targetY && ((index > 0 && !!this.right_forms[index - 1].type) || index === 0) && check_table_up) {
                         if (index > 0) {
                             this.right_forms.splice(index, 0, {type: '', title: '', index: ''});
                         } else {
                             this.right_forms.unshift({type: '', title: '', index: ''});
                         }
-
                     }
                 }
             },
@@ -602,7 +550,7 @@
                 const title = text.split(':')[1];
                 let count = text.split(':')[2];
                 //拖拽表单元素
-                if(type !== 'three' && type !== 'two' && type !== 'table' && type !== 'detail' && type != 'employee_change' && type != 'salary_adjust') {
+                if(['three', 'two', 'table', 'detail', 'employee_change', 'salary_adjust'].indexOf(type) === -1) {
                     if (count === '0') {
                         count = 1;
                         this.right_forms.forEach((item, i) => {
@@ -617,25 +565,9 @@
                         title: this.left ? title + count : title,
                         index: count,
                         placeholder: type === 'describe' ? '描述性文字' : '',
-                        token: Date.parse(new Date()),
-                        list: ['radio', type === 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())}] : ''
-                    });
-                    this.right_forms = this.right_forms.filter(item => {
-                        return !item.token || item.token != this.token;
-                    });
-                    this.right_forms.forEach((item, index) => {
-                        if(item.type === 'three') {
-                            item.children.forEach((val, i) => {
-                                if(val.token === this.token) {
-                                    this.right_forms[index].children[i] = {
-                                        type: '',
-                                        title: '',
-                                        index: '',
-                                        token: ''
-                                    }
-                                }
-                            })
-                        }
+                        token: new Date().getTime(),
+                        list: this.makeList(type),
+                        draggable: true
                     });
                 }
                 //拖拽布局容器
@@ -645,12 +577,12 @@
                         title: '',
                         index: '',
                         token: '',
+                        draggable: false,
                         children: []
                     });
                     for (let i = 0; i < 3; i++) {
-                        this.right_forms[index].children.push({type: '', title: '', index: ''});
+                        this.right_forms[index].children.push({type: '', title: '', index: '', draggable: true});
                     }
-                    $(e.target).attr('draggable', false);
                 }
                 else if(type === 'two' || type === 'detail'){
                     this.$set(this.right_forms, index, {
@@ -658,12 +590,12 @@
                         title: '',
                         index: '',
                         token: '',
+                        draggable: false,
                         children: []
                     });
                     for (let i = 0; i < 2; i++) {
-                        this.right_forms[index].children.push({type: '', title: '', index: ''});
+                        this.right_forms[index].children.push({type: '', title: '', index: '', draggable: true});
                     }
-                    $(e.target).attr('draggable', false);
                 }
                 else if(type === 'table') {
                     this.$set(this.right_forms, index, {
@@ -671,19 +603,20 @@
                         title: '',
                         index: '',
                         token: '',
+                        draggable: false,
                         children: []
                     });
                     for (let i = 0; i < 2; i++) {
-                        this.right_forms[index].children.push([{type: '', title: '', index: ''},{type: '', title: '', index: ''}]);
+                        this.right_forms[index].children.push([{type: '', title: '', index: '', draggable: true},{type: '', title: '', index: '', draggable: true}]);
                     }
-                    $(e.target).attr('draggable', false);
                 }
                 else if(type === 'employee_change') {
                     this.$set(this.right_forms, index, {
                         type: 'employee_change',
                         title: '',
                         index: '',
-                        token: '',
+                        token: new Date().getTime(),
+                        draggable: true,
                         children: []
                     });
                     this.right_forms[index].children.push(
@@ -691,40 +624,43 @@
                             type: 'employee_change_type',
                             title: '异动类型',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: this.employeeChangeType
+                            token: new Date().getTime() + 1,
+                            list: this.employeeChangeType,
+                            draggable: false
                         }],
                         [{
                             type: 'employee_change_result',
                             title: '异动结果',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: []
+                            token: new Date().getTime() + 2,
+                            list: [],
+                            draggable: false
                         }],
                         [{
                             type: 'employee_change_effect',
                             title: '生效日期',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: []
+                            token: new Date().getTime() + 3,
+                            list: [],
+                            draggable: false
                         }],
                         [{
                             type: 'employee_change_reason',
                             title: '原因说明',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: []
+                            token: new Date().getTime() + 4,
+                            list: [],
+                            draggable: false
                         }]
                     );
-
-                    $(e.target).attr('draggable', false);
                 }
                 else if(type === 'salary_adjust') {
                     this.$set(this.right_forms, index, {
                         type: 'salary_adjust',
                         title: '',
                         index: '',
-                        token: '',
+                        token: new Date().getTime(),
+                        draggable: true,
                         children: []
                     });
                     this.right_forms[index].children.push(
@@ -732,33 +668,35 @@
                             type: 'salary_adjust_reason',
                             title: '调整原因',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: this.employeeChangeType
+                            token: new Date().getTime() + 1,
+                            list: this.employeeChangeType,
+                            draggable: false
                         }],
                         [{
                             type: 'salary_adjust_item',
                             title: '调整项目',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: []
+                            token: new Date().getTime() + 2,
+                            list: [],
+                            draggable: false
                         }],
                         [{
                             type: 'salary_adjust_result',
                             title: '调整结果',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: []
+                            token: new Date().getTime() + 3,
+                            list: [],
+                            draggable: false
                         }],
                         [{
                             type: 'salary_adjust_effect',
                             title: '生效日期',
                             index: '',
-                            token: Date.parse(new Date()),
-                            list: []
+                            token: new Date().getTime() + 4,
+                            list: [],
+                            draggable: false
                         }]
                     );
-
-                    $(e.target).attr('draggable', false);
                 }
                 this.clearDrop();
                 $(e.target).removeClass('active');
@@ -789,6 +727,9 @@
                 const type = text.split(':')[0];
                 const title = text.split(':')[1];
                 let count = text.split(':')[2];
+                if(['input', 'textarea', 'radio', 'checkbox', 'money', 'number', 'date', 'select', 'math'].indexOf(type) === -1) {
+                    return null;
+                }
                 if (count === '0') {
                     count = 1;
                     this.right_forms[index].children.forEach((item, i) => {
@@ -804,8 +745,9 @@
                     title: title + count,
                     index: count,
                     placeholder: type === 'describe' ? '描述性文字' : '',
-                    token: Date.parse(new Date()),
-                    list: ['radio', type === 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())}] : ''
+                    token: new Date().getTime(),
+                    list: this.makeList(type),
+                    draggable: true
                 });
                 this.clearDrop();
                 $(e.target).removeClass('active');
@@ -828,7 +770,7 @@
                     return item.type !== '';
                 })
             },
-            onDropContainer(e) {console.log('drop con')
+            onDropContainer(e) {
                 if(!this.left) {
                     return null;
                 }
@@ -838,22 +780,35 @@
              *
              * @param type
              * @param index
+             * @param rowIndex
              * @param i
+             * @param e
              */
-            onEdit(type, index,rowIndex, i) {console.log('onEdit',type, index,rowIndex, i)
+            onEdit(type, index,rowIndex, i, e) {
+                //如果提供了事件对象，则这是一个非IE浏览器
+                if ( e && e.stopPropagation ) {
+                    //因此它支持W3C的stopPropagation()方法
+                    e.stopPropagation();
+                }else {
+                //否则，我们需要使用IE的方式来取消事件冒泡
+                    window.event.cancelBubble = true;
+                }
                 this.showEdit = true;
                 this.currentType = type;
                 this.currentIndex = index;
                 this.currentChildrenIndex = i;
-                this.currentOptions = rowIndex !== '' ? this.right_forms[index].children[rowIndex][i] : i !== '' ? this.right_forms[index].children[i] : this.right_forms[index];console.log(this.currentOptions)
+                if(!this.right_forms[index] || !this.right_forms[index].children && i !== '') {
+                    index--;
+                }
+                this.currentOptions = rowIndex !== '' ? this.right_forms[index].children[rowIndex][i] : i !== '' ? this.right_forms[index].children[i] : this.right_forms[index];
                 if(type === 'radio' || type === 'checkbox' || type === 'select') {
                     if(rowIndex !== '') {
-                        this.list = this.right_forms[this.currentIndex].children[rowIndex][i].list;
+                        this.currentOptions.list = this.right_forms[this.currentIndex].children[rowIndex][i].list;
                     } else {
                         if (this.currentChildrenIndex !== '') {
-                            this.list = this.right_forms[this.currentIndex].children[this.currentChildrenIndex].list;
+                            this.currentOptions.list = this.right_forms[this.currentIndex].children[this.currentChildrenIndex].list;
                         } else {
-                            this.list = this.right_forms[this.currentIndex].list;
+                            this.currentOptions.list = this.right_forms[this.currentIndex].list;
                         }
                     }
                 }
@@ -862,20 +817,22 @@
              * 添加选项
              */
             onAdd() {
-                this.list.push({label: '', value: Date.parse(new Date())});
+                this.currentOptions.list.push({label: '选项' + (this.currentOptions.list.length + 1), value: new Date().getTime()});
             },
             /**
              *  选项设置删除选项
              * @param index
              */
             onDel(index) {
-                this.list.splice(index, 1);
+                if(this.currentOptions.list.length > 2) {
+                    this.currentOptions.list.splice(index, 1);
+                }
             },
             /**
              * 添加列
              * @param index
              */
-            onAddCol(type, index) {console.log('onAddCol')
+            onAddCol(type, index) {
                 if(type === 'detail') {
                     if (this.right_forms[index].children.length < 6) {
                         this.right_forms[index].children.push({
@@ -919,6 +876,9 @@
              */
             onDeleteForm(index) {
                 this.right_forms.splice(index, 1);
+                if(this.right_forms.length <= 0) {
+                    this.currentOptions = {};console.log(this.currentOptions)
+                }
             },
             onDeleteChildrenForm(index, i) {
                 if(this.right_forms[index].children.length > 1) {
@@ -942,6 +902,9 @@
                 const type = text.split(':')[0];
                 const title = text.split(':')[1];
                 let count = text.split(':')[2];
+                if(['input', 'textarea', 'radio', 'checkbox', 'money', 'number', 'date', 'select', 'math'].indexOf(type) === -1) {
+                    return null;
+                }
                 if (count === '0') {
                     count = 1;
                     this.right_forms[index].children.forEach(row => {
@@ -960,8 +923,9 @@
                     title: title + count,
                     index: count,
                     placeholder: type === 'describe' ? '描述性文字' : '',
-                    token: Date.parse(new Date()),
-                    list: ['radio', type === 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())},{label: '', value: Date.parse(new Date())}] : ''
+                    token: new Date().getTime(),
+                    list: this.makeList(type),
+                    draggable: true
                 });
 
                 this.clearDrop();
@@ -1005,6 +969,14 @@
                 this.right_forms = this.right_forms.filter(item => {
                     return item.type !== '';
                 })
+            },
+            /**
+             *
+             * @param type
+             * @returns {*}
+             */
+            makeList(type) {
+                return ['radio', 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '选项1', value: new Date().getTime() + 1},{label: '选项2', value: new Date().getTime() + 2},{label: '选项3', value: new Date().getTime() + 3}] : '';
             }
         },
         watch: {
