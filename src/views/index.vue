@@ -172,19 +172,19 @@
                      v-if="left_tab === 'form'"
                      v-for="item in left_forms"
                      :key="item.type"
-                     @dragstart="onDragStart($event, item.type + ':' + item.title + ':' + 0)"
+                     @dragstart="onDragStart($event, item.type + ':' + item.title)"
                 >{{item.title}}</div>
                 <div draggable="true"
                      v-if="left_tab === 'table'"
                      v-for="item in left_tables"
                      :key="item.type"
-                     @dragstart="onDragStart($event, item.type + ':' + item.title + ':' + 0)"
+                     @dragstart="onDragStart($event, item.type + ':' + item.title)"
                 >{{item.title}}</div>
                 <div draggable="true"
                      v-if="left_tab === 'data'"
                      v-for="item in left_datas"
                      :key="item.type"
-                     @dragstart="onDragStart($event, item.type + ':' + item.title + ':' + 0)"
+                     @dragstart="onDragStart($event, item.type + ':' + item.title)"
                 >{{item.title}}</div>
             </div>
 
@@ -195,16 +195,16 @@
                  :class="{empty: !item.type}"
                  v-for="(item, index) in right_forms"
                  :key="index"
-                 :draggable="item.draggable"
-                 @dragstart.self="onDragStart($event, item.type + ':' + item.title + ':' + item.index, item.token, index)"
-                 @drop.self="onDrop($event, index)"
+                 :draggable="item.draggable && !!item.type"
+                 @dragstart.self="onDragStart($event, item.type + ':' + item.title, item.token, index)"
+                 @drop="onDrop($event, index)"
                  @dragenter="onDragEnter($event, index)"
                  @dragleave="onDragLeave($event, index, item.type)"
                  @dragend.self="onDragEnd"
                  @click="onEdit(item.type, index, '', '')"
             >
                 <Icon type="close-circled" v-if="['detail', 'table'].indexOf(item.type) === -1" @click.native="onDeleteForm(index)" class="icon-form-close"></Icon>
-                <form-item :form_item="item" v-if="item.type !== ''"></form-item>
+                <form-item :form_item="item" ></form-item>
                 <ButtonGroup class="right-item-menu" size="small" v-if="['detail', 'table'].indexOf(item.type) !== -1">
                     <Button>{{item.type === 'detail' ? '编辑明细表' : '编辑表格'}}</Button>
                     <Button @click.native="onAddCol(item.type, index)">添加列</Button>
@@ -218,8 +218,8 @@
                          five: item.children.length === 5, six: item.children.length === 6, table: item.type === 'table' || item.type === 'detail'}"
                          v-for="(val ,i) in item.children"
                          :key="i"
-                         draggable="true"
-                         @dragstart.self="onDragStart($event, val.type + ':' + val.title + ':' + val.index, val.token)"
+                         :draggable="!!val.type"
+                         @dragstart.self="onDragStart($event, val.type + ':' + val.title, val.token)"
                          @drop="onDropChildren($event, index, i)"
                          @dragenter="onDragEnterChildren"
                          @dragleave="onDragLeaveChildren"
@@ -237,8 +237,8 @@
                          five: row.length === 5, six: row.length === 6, table: item.type === 'table' || item.type === 'detail'}"
                               v-for="(val ,i) in row"
                               :key="i"
-                             :draggable="val.draggable"
-                              @dragstart.self="onDragStart($event, val.type + ':' + val.title + ':' + val.index, val.token)"
+                             :draggable="val.draggable && !!val.type"
+                              @dragstart.self="onDragStart($event, val.type + ':' + val.title, val.token)"
                               @drop="onDropTableChildren($event, index, rowIndex, i)"
                               @dragenter="onDragEnterChildren"
                               @dragleave="onDragLeaveChildren"
@@ -293,7 +293,7 @@
                      <span v-if="currentType !== 'describe'">
                         <div class="edit-title">设置</div>
                         <Checkbox v-model="currentOptions.hide_title">隐藏标题</Checkbox>
-                        <Checkbox v-model="currentOptions.show_order">显示序号</Checkbox>
+                        <Checkbox v-model="currentOptions.show_order" v-if="currentType === 'detail'">显示序号</Checkbox>
                      </span>
                     <!--7-->
                      <span v-if="currentType === 'number'">
@@ -376,7 +376,7 @@
         <Checkbox v-model="showPreview">预览</Checkbox>
 
         <Modal v-model="showPreview" title="预览" width="700">
-            <preview-form v-if="showPreview" v-for="(item, index) in right_forms"  :key="index" :form_item="item"></preview-form>
+            <preview-form v-if="showPreview" @getData="getData" @delete="onDeleteDetail" @add="onAddDetail" v-for="(item, index) in right_forms" :key="index" :form_item="item"></preview-form>
         </Modal>
     </div>
 
@@ -404,7 +404,7 @@
                     {title: '数字', type: 'number'},
                     {title: '运算控件', type: 'math'},
                     {title: '日期', type: 'datepicker'},
-                    {title: '附件', type: 'file '},
+                    {title: '附件', type: 'file'},
                     {title: '关联表单', type: 'form'},
                     {title: '表格', type: 'table'},
                     {title: '明细表', type: 'detail'}
@@ -460,7 +460,8 @@
                     color: '字体颜色',              //red红black黑
                     font_size: '字体大小',              // 5 4 3
 
-                }
+                },
+                testData: {}
             }
         },
         mounted() {
@@ -545,25 +546,13 @@
                 }
                 this.inside = false;
                 const text = e.dataTransfer.getData('text/plain');
-
                 const type = text.split(':')[0];
                 const title = text.split(':')[1];
-                let count = text.split(':')[2];
                 //拖拽表单元素
                 if(['three', 'two', 'table', 'detail', 'employee_change', 'salary_adjust'].indexOf(type) === -1) {
-                    if (count === '0') {
-                        count = 1;
-                        this.right_forms.forEach((item, i) => {
-                            if (item.type === type) {
-                                count++;
-                            }
-                        });
-                    }
-
                     this.$set(this.right_forms, index, {
                         type: type,
-                        title: this.left ? title + count : title,
-                        index: count,
+                        title: title,
                         placeholder: type === 'describe' ? '描述性文字' : '',
                         token: new Date().getTime(),
                         list: this.makeList(type),
@@ -726,24 +715,21 @@
 
                 const type = text.split(':')[0];
                 const title = text.split(':')[1];
-                let count = text.split(':')[2];
-                if(['input', 'textarea', 'radio', 'checkbox', 'money', 'number', 'date', 'select', 'math'].indexOf(type) === -1) {
-                    return null;
-                }
-                if (count === '0') {
-                    count = 1;
-                    this.right_forms[index].children.forEach((item, i) => {
-                        if (item.type === type) {
-                            count++;
-                        }
-                    });
 
+                if(this.right_forms[index].type === 'detail') {
+                    if(['three', 'two', 'table', 'detail', 'employee_change', 'salary_adjust', 'describe', 'line'].indexOf(type) !== -1) {
+                        return null;
+                    }
+                }else {
+                    if(['three', 'two', 'table', 'detail', 'employee_change', 'salary_adjust'].indexOf(type) !== -1) {
+                        return null;
+                    }
                 }
+
 
                 this.$set(this.right_forms[index].children, i, {
                     type: type,
-                    title: title + count,
-                    index: count,
+                    title: title,
                     placeholder: type === 'describe' ? '描述性文字' : '',
                     token: new Date().getTime(),
                     list: this.makeList(type),
@@ -901,27 +887,14 @@
 
                 const type = text.split(':')[0];
                 const title = text.split(':')[1];
-                let count = text.split(':')[2];
-                if(['input', 'textarea', 'radio', 'checkbox', 'money', 'number', 'date', 'select', 'math'].indexOf(type) === -1) {
+
+                if(['three', 'two', 'table', 'detail', 'employee_change', 'salary_adjust'].indexOf(type) !== -1) {
                     return null;
-                }
-                if (count === '0') {
-                    count = 1;
-                    this.right_forms[index].children.forEach(row => {
-                        row.forEach((item, i) => {
-                            if (item.type === type) {
-                                count++;
-                            }
-                        });
-
-                    });
-
                 }
 
                 this.$set(this.right_forms[index].children[rowIndex], i, {
                     type: type,
-                    title: title + count,
-                    index: count,
+                    title: title,
                     placeholder: type === 'describe' ? '描述性文字' : '',
                     token: new Date().getTime(),
                     list: this.makeList(type),
@@ -977,6 +950,41 @@
              */
             makeList(type) {
                 return ['radio', 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '选项1', value: new Date().getTime() + 1},{label: '选项2', value: new Date().getTime() + 2},{label: '选项3', value: new Date().getTime() + 3}] : '';
+            },
+            /**
+             * 获取单据值
+             * @param val1
+             * @param val2
+             * @param val3
+             */
+            getData(val1, val2, val3) {console.log(val3)
+                if(!!val3 || val3 === 0) {
+                    if(!this.testData[val1]) {
+                        this.testData[val1] = [null, null, null];
+                    }
+                    this.testData[val1][val3] = val2;
+                }else {
+                    this.testData[val1] = val2;
+                }
+            },
+            /**
+             * 删除明细表行
+             * @param n
+             * @param token
+             */
+            onDeleteDetail(n,  tokens) {
+                this.onAddDetail(tokens);
+                tokens.forEach(item => {
+                    this.testData[item].splice(n, 1);
+                });
+
+            },
+            onAddDetail(tokens) {
+                tokens.forEach(item => {
+                    if(!this.testData[item]) {
+                        this.testData[item] = [null, null, null];
+                    }
+                });
             }
         },
         watch: {
