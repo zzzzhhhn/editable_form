@@ -388,7 +388,17 @@
         <Checkbox v-model="showPreview">预览</Checkbox>
 
         <Modal v-model="showPreview" title="预览" width="700">
-            <preview-form v-if="showPreview" @getData="getData" @delete="onDeleteDetail" @add="onAddDetail" v-for="(item, index) in right_forms" :key="index" :form_item="item"></preview-form>
+            <preview-form
+                    ref="preview_form"
+                    v-if="showPreview"
+                    @getData="getData"
+                    @delete="onDeleteDetail"
+                    @add="onAddDetail"
+                    v-for="(item, index) in right_forms"
+                    :key="index"
+                    :form_item="item"
+            >
+            </preview-form>
         </Modal>
     </div>
 
@@ -477,6 +487,7 @@
                 mathFormula: '',                //运算式
                 mathFormulaArr: [],
                 mathFormulaTokenArr: [],                //token 运算式 数组
+                strArr: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
             }
         },
         mounted() {
@@ -569,7 +580,7 @@
                         type: type,
                         title: title,
                         placeholder: type === 'describe' ? '描述性文字' : '',
-                        token: new Date().getTime(),
+                        token: this.getRandomString(),
                         list: this.makeList(type),
                         draggable: true
                     });
@@ -619,7 +630,7 @@
                         type: 'employee_change',
                         title: '',
                         index: '',
-                        token: new Date().getTime(),
+                        token: this.getRandomString(),
                         draggable: true,
                         children: []
                     });
@@ -628,7 +639,7 @@
                             type: 'employee_change_type',
                             title: '异动类型',
                             index: '',
-                            token: new Date().getTime() + 1,
+                            token: this.getRandomString() + 1,
                             list: this.employeeChangeType,
                             draggable: false
                         }],
@@ -636,7 +647,7 @@
                             type: 'employee_change_result',
                             title: '异动结果',
                             index: '',
-                            token: new Date().getTime() + 2,
+                            token: this.getRandomString() + 2,
                             list: [],
                             draggable: false
                         }],
@@ -644,7 +655,7 @@
                             type: 'employee_change_effect',
                             title: '生效日期',
                             index: '',
-                            token: new Date().getTime() + 3,
+                            token: this.getRandomString() + 3,
                             list: [],
                             draggable: false
                         }],
@@ -652,7 +663,7 @@
                             type: 'employee_change_reason',
                             title: '原因说明',
                             index: '',
-                            token: new Date().getTime() + 4,
+                            token: this.getRandomString() + 4,
                             list: [],
                             draggable: false
                         }]
@@ -663,7 +674,7 @@
                         type: 'salary_adjust',
                         title: '',
                         index: '',
-                        token: new Date().getTime(),
+                        token: this.getRandomString(),
                         draggable: true,
                         children: []
                     });
@@ -672,7 +683,7 @@
                             type: 'salary_adjust_reason',
                             title: '调整原因',
                             index: '',
-                            token: new Date().getTime() + 1,
+                            token: this.getRandomString() + 1,
                             list: this.employeeChangeType,
                             draggable: false
                         }],
@@ -680,7 +691,7 @@
                             type: 'salary_adjust_item',
                             title: '调整项目',
                             index: '',
-                            token: new Date().getTime() + 2,
+                            token: this.getRandomString() + 2,
                             list: [],
                             draggable: false
                         }],
@@ -688,7 +699,7 @@
                             type: 'salary_adjust_result',
                             title: '调整结果',
                             index: '',
-                            token: new Date().getTime() + 3,
+                            token: this.getRandomString() + 3,
                             list: [],
                             draggable: false
                         }],
@@ -696,7 +707,7 @@
                             type: 'salary_adjust_effect',
                             title: '生效日期',
                             index: '',
-                            token: new Date().getTime() + 4,
+                            token: this.getRandomString() + 4,
                             list: [],
                             draggable: false
                         }]
@@ -746,7 +757,7 @@
                     type: type,
                     title: title,
                     placeholder: type === 'describe' ? '描述性文字' : '',
-                    token: new Date().getTime(),
+                    token: this.getRandomString(),
                     list: this.makeList(type),
                     draggable: true
                 });
@@ -819,7 +830,7 @@
              * 添加选项
              */
             onAdd() {
-                this.currentOptions.list.push({label: '选项' + (this.currentOptions.list.length + 1), value: new Date().getTime()});
+                this.currentOptions.list.push({label: '选项' + (this.currentOptions.list.length + 1), value: this.getRandomString()});
             },
             /**
              *  选项设置删除选项
@@ -912,7 +923,7 @@
                     type: type,
                     title: title,
                     placeholder: type === 'describe' ? '描述性文字' : '',
-                    token: new Date().getTime(),
+                    token: this.getRandomString(),
                     list: this.makeList(type),
                     draggable: true
                 });
@@ -965,23 +976,29 @@
              * @returns {*}
              */
             makeList(type) {
-                return ['radio', 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '选项1', value: new Date().getTime() + 1},{label: '选项2', value: new Date().getTime() + 2},{label: '选项3', value: new Date().getTime() + 3}] : '';
+                return ['radio', 'checkbox', 'select'].indexOf(type) !==  -1  ? [{label: '选项1', value: this.getRandomString() + 1},{label: '选项2', value: this.getRandomString() + 2},{label: '选项3', value: this.getRandomString() + 3}] : '';
             },
             /**
              * 获取单据值
-             * @param val1
-             * @param val2
-             * @param val3
+             * @param val1 type
+             * @param val2 key(token)
+             * @param val3 value
+             * @param val4 index(detail 第 index 行数据)
+             *
              */
-            getData(val1, val2, val3) {
-                if(!!val3 || val3 === 0) {
-                    if(!this.testData[val1]) {
-                        this.testData[val1] = [null, null, null];
+            getData(val1, val2, val3, val4) {
+                if(val4 !== undefined) {
+                    if(!this.testData[val2]) {
+                        this.testData[val2] = [null, null, null];
                     }
-                    this.testData[val1][val3] = val2;
-                }else {
-                    this.testData[val1] = val2;
+                    this.testData[val2][val4] = val3;
+                }else if(['number', 'money'].indexOf(val1) !== -1) {
+                    this.testData[val2] = parseFloat(val3);
                 }
+                else {
+                    this.testData[val2] = val3;
+                }
+                this.doMath();
             },
             /**
              * 删除明细表行
@@ -1009,7 +1026,7 @@
              */
             onAddMathItem(val1, val2) {
                 this.mathFormulaArr.push(val1);
-                this.mathFormulaTokenArr.push(val2 !== undefined ? val2 : val1);
+                this.mathFormulaTokenArr.push(val2 !== undefined ? 'that.testData.' + val2 : val1);
                 this.makeFormulaString();
             },
             cancelMathItem() {
@@ -1024,9 +1041,39 @@
                 this.mathFormulaTokenArr = [];
                 this.makeFormulaString();
             },
+            /**
+             * 计算式数组转字符串
+             */
             makeFormulaString() {
                 this.mathFormula = this.mathFormulaArr.join(' ');
                 this.currentOptions.math_formula = this.mathFormulaTokenArr.join(' ');
+            },
+            /**
+             * 运算控件自动运算
+             */
+            doMath() {
+                this.right_forms.forEach((item, index) => {
+                    const that = this;
+
+                    if(item.type === 'math') {
+                        const arr = item.math_formula.match(/[a-z]{13}/g);
+                        let no_empty = true;
+                        arr.forEach(val => {
+                            if(this.testData[val] === undefined) {
+                                no_empty = false;
+                            }
+                        });
+                        if (no_empty) {
+                            this.testData[item.token] = eval(item.math_formula);console.log(this.testData[item.token], typeof this.testData[item.token])
+                            const result = isNaN(this.testData[item.token]) ? '' : this.testData[item.token];
+                            this.$refs['preview_form'][index].$refs['form-item-preview'].setData(result);
+                        }
+
+                    }
+                });
+            },
+            getRandomString() {
+                return new Date().getTime().toString().split('').map(val => this.strArr[val]).join('');
             }
         },
         computed: {

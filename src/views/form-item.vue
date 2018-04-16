@@ -55,7 +55,7 @@
         data() {
             return {
                 file: null,
-                item_data: null
+                item_data: null,
             }
         },
         created() {
@@ -70,12 +70,14 @@
             },
             onChangeDate(val) {
                 this.item_data = val;
+            },
+            setData(val) {
+                this.item_data = val;
             }
         },
-        computed: {},
         watch: {
             item_data(val) {
-                this.$emit('getData', this.form_item.token, val, this.count);
+                this.$emit('getData', this.form_item.type, this.form_item.token, val, this.count);
             }
         },
         destroyed() {

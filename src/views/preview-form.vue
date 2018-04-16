@@ -1,10 +1,10 @@
 <template>
     <div class="right-item">
         <div v-if="!form_item.children && !!form_item.type">
-            <form-item :form_item="form_item" @getData="getRowData"></form-item>
+            <form-item ref="form-item-preview" :form_item="form_item" @getData="getRowData"></form-item>
         </div>
         <div v-else-if="['two', 'three'].indexOf(form_item.type) !==  -1" class="right-item-children">
-            <form-item v-for="(item, index) in form_item.children"  @getData="getRowData" :key="index" :form_item="item"></form-item>
+            <form-item ref="form-item-preview" v-for="(item, index) in form_item.children"  @getData="getRowData" :key="index" :form_item="item"></form-item>
         </div>
         <div v-else-if="form_item.type === 'detail'">
             <table style="width: 100%; text-align: center">
@@ -18,14 +18,14 @@
                 <tbody>
                     <tr v-for="(item, n) in detailCount" v-if="item">
                         <td v-if="form_item.show_order">{{n + 1}}</td>
-                        <td v-for="item in form_item.children"><form-item :form_item="item" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
+                        <td v-for="item in form_item.children"><form-item ref="form-item-preview" :form_item="item" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
                         <td><Icon type="plus-circled" size="30" @click.native="addCount"></Icon><Icon type="minus-circled" size="30" @click.native="deleteCount(n, item)"></Icon></td>
                     </tr>
                 </tbody>
             </table>
         </div>
         <div v-else-if="[ 'table', 'employee_change', 'salary_adjust'].indexOf(form_item.type) !== -1" v-for="(row, rowIndex) in form_item.children" :key="rowIndex">
-            <form-item  v-for="(item, index) in row"  @getData="getRowData" :key="index" :form_item="item"></form-item>
+            <form-item ref="form-item-preview"  v-for="(item, index) in row"  @getData="getRowData" :key="index" :form_item="item"></form-item>
         </div>
     </div>
 </template>
@@ -77,20 +77,22 @@
             },
             /**
              * 详情表参数
-             * @param val1 键
-             * @param val2 值
+             * @param val1 type
+             * @param val2 token
+             * @param val3 value
              */
-            getRowData(val1,val2) {
-                this.$emit('getData', val1, val2);
+            getRowData(val1,val2, val3) {
+                this.$emit('getData', val1, val2, val3);
             },
             /**
              * 详情表参数
-             * @param val1 键
-             * @param val2 值
-             * @param val3 索引
+             * @param val1 type
+             * @param val2 token
+             * @param val3 value
+             * @param val4 rowIndex
              */
-            getDetailData(val1, val2, val3) {
-                this.$emit('getData', val1, val2, val3);
+            getDetailData(val1, val2, val3, val4) {
+                this.$emit('getData', val1, val2, val3, val4);
             }
         },
         computed: {
