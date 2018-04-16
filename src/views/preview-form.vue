@@ -10,12 +10,14 @@
             <table style="width: 100%; text-align: center">
                 <thead>
                     <tr>
+                        <th v-if="form_item.show_order">序号</th>
                         <th v-for="item in form_item.children" >{{item.title}}</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="(item, n) in detailCount" v-if="item">
+                        <td v-if="form_item.show_order">{{n + 1}}</td>
                         <td v-for="item in form_item.children"><form-item :form_item="item" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
                         <td><Icon type="plus-circled" size="30" @click.native="addCount"></Icon><Icon type="minus-circled" size="30" @click.native="deleteCount(n, item)"></Icon></td>
                     </tr>

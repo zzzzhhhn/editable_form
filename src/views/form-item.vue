@@ -1,9 +1,9 @@
 <template>
-    <div class="w100 item-container"  :class="{'title-col': form_item.title_style === 'col'}" v-if="['table', 'detail', 'employee_change', 'salary_adjust', 'two', 'three'].indexOf(form_item.type) === -1">
-        <div class="item-title" style="font-weight: bold" v-if="['describe', 'line', 'table', 'detail'].indexOf(form_item.type) === -1 && !form_item.hide_title && !hide_title">{{form_item.title !== '' ? form_item.title + ':' : '&nbsp;'}}</div>
-
+    <div class="w100 item-container" :class="{'title-col': form_item.title_style === 'col'}" v-if="['table', 'detail', 'employee_change', 'salary_adjust', 'two', 'three'].indexOf(form_item.type) === -1">
+        <div class="item-title"  :class="{'title-col': form_item.title_style === 'col'}" style="font-weight: bold" v-if="['describe', 'line', 'table', 'detail'].indexOf(form_item.type) === -1 && !form_item.hide_title && !hide_title">{{form_item.title !== '' ? form_item.title + ':' : '&nbsp;'}}</div>
+        <div>{{form_item.describe}}</div>
         <div class="item-content">
-            <Input v-if="['input', 'money', 'number', 'math', 'form', 'salary_adjust_result'].indexOf(form_item.type) !== -1" :placeholder="form_item.placeholder" v-model="item_data"></Input>
+            <span  v-if="['input', 'money', 'number', 'math', 'form', 'salary_adjust_result'].indexOf(form_item.type) !== -1"><Input :placeholder="form_item.placeholder" v-model="item_data"></Input><span v-if="form_item.num_format==='percent'">%</span></span>
 
             <Input v-if="['textarea', 'describe', 'employee_change_reason'].indexOf(form_item.type) !== -1" type="textarea" :placeholder="form_item.placeholder"  v-model="item_data"></Input>
 
@@ -97,7 +97,10 @@
 
         .item-title {
             flex: none;
-            width: 200px;
+            width: 65px;
+            &.title-col {
+                width: 100%;
+            }
         }
         .item-content {
             flex: auto;

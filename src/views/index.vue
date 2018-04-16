@@ -313,15 +313,25 @@
                         </RadioGroup>
                     </span>
                     <!--9-->
-                    <span v-if="currentType === 'math'">
+                    <div class="math-panel" v-if="currentType === 'math'">
                         <div class="edit-title">计算面板</div>
-                        <div><span>字段</span></div>
-                        <div><span>常量</span><Input></Input><Button>确认</Button></div>
-                        <div><span>运算符</span><Button>+</Button><Button>-</Button><Button>*</Button><Button>/</Button><Button>(</Button><Button>)</Button></div>
-                        <div><span>计算式</span><Button>撤销</Button><Button>清空</Button></div>
-                        <div></div>
+                        <div><span>字段</span>
+                        <span v-for="item in mathArr" :key="item.token"  @click="onAddMathItem(item.title, item.token)">{{item.title}}</span>
+                        </div>
+                        <div><span>常量</span><Input style="width: 100px" v-model="constValue"></Input><Button @click="onAddMathItem(constValue)">确认</Button></div>
+                        <div>
+                            <span>运算符</span>
+                            <Button @click.native="onAddMathItem('+')">+</Button>
+                            <Button @click.native="onAddMathItem('-')">-</Button>
+                            <Button @click.native="onAddMathItem('*')">*</Button>
+                            <Button @click.native="onAddMathItem('/')">/</Button>
+                            <Button @click.native="onAddMathItem('(')">(</Button>
+                            <Button @click.native="onAddMathItem(')')">)</Button>
+                        </div>
+                        <div><span>计算式</span><Button @click="cancelMathItem">撤销</Button><Button @click="clearMathFormula">清空</Button></div>
+                        <div>{{mathFormula}}</div>
                         <div><Button>取消</Button><Button>确认</Button></div>
-                    </span>
+                    </div>
 
                     <!--11-->
                     <span v-if="['input', 'textarea', 'radio', 'checkbox', 'select', 'money', 'number', 'datetime', 'employee_change_reason', 'employee_change_type', 'employee_change_result', 'employee_change_effect',
@@ -332,6 +342,7 @@
                     <!--12-->
                     <span v-if="currentType === 'detail'">
                         <div class="edit-title">合计字段</div>
+                        <span v-for="item in sumArr" :key="item.token">{{item.title}}</span>
                     </span>
                     <!--13-->
                     <span v-if="currentType === 'employee_change'">
@@ -361,6 +372,7 @@
                         <Option value="4">4</Option>
                         <Option value="3">3</Option>
                     </Select>
+                    <div class="edit-preview">描述性文字描述性文字描述性文字</div>
                 </span>
             </span>
         </div>
@@ -425,6 +437,7 @@
                 currentIndex: '',
                 startIndex: '',             //被拖拽元素Index
                 currentChildrenIndex: '',
+                currentRowIndex: '',
                 currentOptions: {},
                 showEdit: false,
                 list: [],
@@ -449,8 +462,6 @@
                     show_order: '显示序号',
                     num_format: '数据类型',             //number 数值 percent 百分比
                     date_formate: '时间格式',               //datetime年月日 时分 date年月日 month年月
-                    matn_var: '运算插件变量',
-                    math_const: '常量',
                     math_formula: '运算式',
                     placeholder: '提示',
                     sum_var: '合计项',
@@ -461,7 +472,11 @@
                     font_size: '字体大小',              // 5 4 3
 
                 },
-                testData: {}
+                testData: {},
+                constValue: '',
+                mathFormula: '',                //运算式
+                mathFormulaArr: [],
+                mathFormulaTokenArr: [],                //token 运算式 数组
             }
         },
         mounted() {
@@ -783,6 +798,7 @@
                 this.currentType = type;
                 this.currentIndex = index;
                 this.currentChildrenIndex = i;
+                this.currentRowIndex= rowIndex;
                 if(!this.right_forms[index] || !this.right_forms[index].children && i !== '') {
                     index--;
                 }
@@ -863,7 +879,7 @@
             onDeleteForm(index) {
                 this.right_forms.splice(index, 1);
                 if(this.right_forms.length <= 0) {
-                    this.currentOptions = {};console.log(this.currentOptions)
+                    this.currentOptions = {};
                 }
             },
             onDeleteChildrenForm(index, i) {
@@ -957,7 +973,7 @@
              * @param val2
              * @param val3
              */
-            getData(val1, val2, val3) {console.log(val3)
+            getData(val1, val2, val3) {
                 if(!!val3 || val3 === 0) {
                     if(!this.testData[val1]) {
                         this.testData[val1] = [null, null, null];
@@ -985,6 +1001,52 @@
                         this.testData[item] = [null, null, null];
                     }
                 });
+            },
+            /**
+             * 生成计算式
+             * @param val1 title
+             * @param val2 token
+             */
+            onAddMathItem(val1, val2) {
+                this.mathFormulaArr.push(val1);
+                this.mathFormulaTokenArr.push(val2 !== undefined ? val2 : val1);
+                this.makeFormulaString();
+            },
+            cancelMathItem() {
+                if(this.mathFormulaArr.length > 0) {
+                    this.mathFormulaArr.pop();
+                    this.mathFormulaTokenArr.pop();
+                    this.makeFormulaString();
+                }
+            },
+            clearMathFormula() {
+                this.mathFormulaArr = [];
+                this.mathFormulaTokenArr = [];
+                this.makeFormulaString();
+            },
+            makeFormulaString() {
+                this.mathFormula = this.mathFormulaArr.join(' ');
+                this.currentOptions.math_formula = this.mathFormulaTokenArr.join(' ');
+            }
+        },
+        computed: {
+            sumArr() {
+                return this.currentIndex !== '' && !!this.right_forms[this.currentIndex].children ? this.right_forms[this.currentIndex].children.filter(item => ['money', 'number', 'math'].indexOf(item.type) !== -1) : [];
+            },
+            mathArr() {
+                let arr = [];
+                arr = this.right_forms.filter(item => ['number', 'money'].indexOf(item.type) !== -1);
+                this.right_forms.forEach(item => {
+                    if(!!item.children) {
+                        if(item.type !== 'table') {
+                            arr = arr.concat(item.children.filter(val => ['number', 'money'].indexOf(val.type) !== -1));
+                        }else {
+                            item.children.forEach(row => arr = arr.concat(row.filter(val => ['number', 'money'].indexOf(val.type) !== -1)));
+                        }
+
+                    }
+                });
+                return arr;
             }
         },
         watch: {
