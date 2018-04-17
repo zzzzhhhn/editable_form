@@ -5,7 +5,17 @@
         <div class="item-content">
             <span  v-if="['input', 'money', 'number', 'math', 'form', 'salary_adjust_result'].indexOf(form_item.type) !== -1"><Input :placeholder="form_item.placeholder" v-model="item_data"></Input><span v-if="form_item.num_format==='percent'">%</span></span>
 
-            <Input v-if="['textarea', 'describe', 'employee_change_reason'].indexOf(form_item.type) !== -1" type="textarea" :placeholder="form_item.placeholder"  v-model="item_data"></Input>
+            <Input v-if="['textarea', 'employee_change_reason'].indexOf(form_item.type) !== -1" type="textarea" :placeholder="form_item.placeholder"  v-model="item_data"></Input>
+
+            <div class="form-describe"
+                 :class="{
+                     'color-red': form_item.color === 'red',
+                     'font-13': form_item.font_size === '13',
+                     'font-16': form_item.font_size === '16',
+                     'font-20': form_item.font_size === '20',
+                     'font-bold': form_item.bold
+                 }"
+                 v-if="form_item.type === 'describe'">{{form_item.descriptive_text}}</div>
 
             <hr class="w100" style="border:2px  solid black" v-if="form_item.type === 'line'"/>
 
@@ -17,9 +27,16 @@
                 <Checkbox v-for="val in form_item.list" :key="val.value" :label="val.value">{{val.label}}</Checkbox>
             </CheckboxGroup>
 
-            <Select v-if="['select', 'employee_change_type', 'employee_change_result', 'salary_adjust_reason', 'salary_adjust_item'].indexOf(form_item.type) !== -1"  v-model="item_data">
+            <Select v-if="['select', 'employee_change_result', 'salary_adjust_reason', 'salary_adjust_item'].indexOf(form_item.type) !== -1"  v-model="item_data">
                 <Option v-for="val in form_item.list" :key="val.value" :value="val.value">{{val.label}}</Option>
             </Select>
+
+            <span v-if="form_item.type === 'employee_change_type' && form_item.employee_change_show">
+                 <Select v-if="form_item.employee_change_type === 'select'"  v-model="item_data">
+                     <Option v-for="val in form_item.list" :key="val.value" :value="val.value">{{val.label}}</Option>
+                 </Select>
+                <Input readonly :value="form_item.employee_change_value" v-else></Input>
+            </span>
 
             <DatePicker
                 v-if="['datepicker', 'employee_change_effect', 'salary_adjust_effect'].indexOf(form_item.type) !== -1"
@@ -30,8 +47,8 @@
 
             <div  v-if="form_item.type === 'file'">
                 <Upload
-                        :before-upload="handleUpload"
-                        action="//jsonplaceholder.typicode.com/posts/">
+                    :before-upload="handleUpload"
+                    action="//jsonplaceholder.typicode.com/posts/">
                     <Button type="ghost" icon="ios-cloud-upload-outline">Select the file to upload</Button>
                 </Upload>
             </div>
@@ -106,6 +123,12 @@
         }
         .item-content {
             flex: auto;
+        }
+
+        .form-describe {
+            min-height: 50px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
         }
     }
 </style>

@@ -44,7 +44,42 @@
     }
     .font-bold {
         font-weight: bold;
+
+        textarea.ivu-input {
+            font-weight: bold;
+        }
     }
+
+    .color-red {
+        color: red;
+
+        textarea.ivu-input {
+            color: red;
+        }
+    }
+
+    .font-13 {
+        font-size: 13px;
+
+        textarea.ivu-input {
+            font-size: 13px;
+        }
+    }
+    .font-16 {
+        font-size: 16px;
+
+        textarea.ivu-input {
+            font-size: 16px;
+        }
+    }
+    .font-20 {
+        font-size: 20px;
+
+        textarea.ivu-input {
+            font-size: 20px;
+        }
+    }
+
 
     .left {
         .left-content {
@@ -342,10 +377,12 @@
                     <!--12-->
                     <span v-if="currentType === 'detail'">
                         <div class="edit-title">合计字段</div>
-                        <span v-for="item in sumArr" :key="item.token">{{item.title}}</span>
+                        <CheckboxGroup v-model="currentOptions.sum">
+                            <Checkbox v-for="item in sumArr" :key="item.token" :label="item.token">{{item.title}}</Checkbox>
+                        </CheckboxGroup>
                     </span>
                     <!--13-->
-                    <span v-if="currentType === 'employee_change'">
+                    <span v-if="currentType === 'employee_change_type'">
                         <div class="edit-title">切换组件类型</div>
                         <RadioGroup v-model="currentOptions.employee_change_type"  >
                             <Radio label="select">下拉菜单</Radio>
@@ -355,24 +392,35 @@
                             <Select style="width:200px" v-model="currentOptions.employee_change_value">
                                 <Option v-for="val in employeeChangeType" :value="val.value"  :key="val.value">{{val.label}}</Option>
                             </Select>
-                            <Checkbox v-model="currentOptions.employee_change_show">显示</Checkbox>
                         </div>
+                          <Checkbox v-model="currentOptions.employee_change_show">显示</Checkbox>
                     </span>
                 </span>
                 <span v-else>
                     <!--10-->
                     <div class="edit-title">格式</div>
-                    <span class="font-bold">B</span>
+                    <Checkbox v-model="currentOptions.bold" class="font-bold">B</Checkbox>
                     <Select v-model="currentOptions.color" style="width:50px">
                         <Option value="black">黑</Option>
                         <Option value="red">红</Option>
                     </Select>
                     <Select v-model="currentOptions.font_size" style="width:50px">
-                        <Option value="5">5</Option>
-                        <Option value="4">4</Option>
-                        <Option value="3">3</Option>
+                        <Option value="13">13</Option>
+                        <Option value="16">16</Option>
+                        <Option value="20">20</Option>
                     </Select>
-                    <div class="edit-preview">描述性文字描述性文字描述性文字</div>
+                    <Input
+                            class="edit-preview"
+                            :class="{
+                                'color-red': currentOptions.color === 'red',
+                                'font-13': currentOptions.font_size === '13',
+                                 'font-16': currentOptions.font_size === '16',
+                                 'font-20': currentOptions.font_size === '20',
+                                 'font-bold': currentOptions.bold
+                            }"
+                            type="textarea"
+                            v-model="currentOptions.descriptive_text"
+                    ></Input>
                 </span>
             </span>
         </div>
@@ -408,8 +456,10 @@
 <script>
     import previewForm from './preview-form.vue';
     import formItem from './form-item.vue';
+    import Input from "../../node_modules/iview/src/components/input/input.vue";
     export default {
         components: {
+            Input,
             previewForm, formItem
         },
         data() {
@@ -448,7 +498,9 @@
                 startIndex: '',             //被拖拽元素Index
                 currentChildrenIndex: '',
                 currentRowIndex: '',
-                currentOptions: {},
+                currentOptions: {
+                    sum: []
+                },
                 showEdit: false,
                 list: [],
                 date_formate: '',
@@ -460,6 +512,12 @@
                     {value: 'change', label: '调动'},
                     {value: 'leave', label: '离职'},
                     {value: 'promote', label: '晋升'}
+                ],
+                salaryAdjustReason: [
+                    {value: 'hired', label: '转正调薪'},
+                    {value: 'change', label: '任职变动'},
+                    {value: 'promote', label: '年限晋级'},
+                    {value: 'all', label: '公司普调'}
                 ],
                 data_example: {
                     type: '控件类型',
@@ -641,7 +699,9 @@
                             index: '',
                             token: this.getRandomString() + 1,
                             list: this.employeeChangeType,
-                            draggable: false
+                            draggable: false,
+                            employee_change_type: 'select',
+                            employee_change_show: true
                         }],
                         [{
                             type: 'employee_change_result',
@@ -684,7 +744,7 @@
                             title: '调整原因',
                             index: '',
                             token: this.getRandomString() + 1,
-                            list: this.employeeChangeType,
+                            list: this.salaryAdjustReason,
                             draggable: false
                         }],
                         [{
