@@ -77,10 +77,14 @@
             return {
                 file: null,
                 item_data: null,
+                a: true
             }
         },
         created() {
-
+            if(this.a) {
+                this.a = false;
+                this.form_item.token = this.form_item.token + Math.ceil(Math.random()*999);
+            }
         },
         mounted() {
 

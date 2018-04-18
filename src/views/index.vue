@@ -720,7 +720,7 @@
                     {
                         type: 'detail',
                         title: '采购明细',
-                        totals: ['sum']
+                        totals: ['sum'],
                         children: [
                             {
                                 type: 'input',
@@ -856,7 +856,7 @@
                         token: 'reason'
                     }
                 ],
-                
+
             }
         },
         mounted() {
@@ -1358,7 +1358,6 @@
                     this.testData[val2].forEach(val => sum += val);
                     sum = isNaN(sum) ? '' : sum;
                     this.testData[val2 + '_total'] = sum;
-                    //TODO settotal
                     this.$refs['preview_form'][val5].setTotal(val2, sum);
                 }
                 else {
@@ -1435,6 +1434,12 @@
                             this.$refs['preview_form'][index].$refs['form-item-preview'].setData(result);
                         }
 
+                    }else if(item.type === 'detail'){
+                        item.children.forEach((chi, chiIndex) => {
+                            if(chi.type === 'math') {
+
+                            }
+                        })
                     }
                 });
             },

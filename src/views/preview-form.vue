@@ -18,8 +18,8 @@
                 <tbody>
                     <tr v-for="(item, n) in detailCount" v-if="item">
                         <td v-if="form_item.show_order">{{n + 1}}</td>
-                        <td v-for="item in form_item.children"><form-item ref="form-item-preview" :index="index" :form_item="item" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
-                        <td><Icon type="plus-circled" size="30" @click.native="addCount"></Icon><Icon type="minus-circled" size="30" @click.native="deleteCount(n, item)"></Icon></td>
+                        <td v-for="chi in form_item.children"><form-item ref="form-item-preview" :index="index" :form_item="chi" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
+                        <td><Icon type="plus-circled" size="30" @click.native="addCount"></Icon><Icon type="minus-circled" size="30" @click.native="deleteCount(n)"></Icon></td>
                     </tr>
                     <tr>
                         <td v-if="form_item.show_order"></td>
@@ -64,7 +64,7 @@
                 this.detailCount.push(new Date().getTime());
                 this.$emit('add', this.tokens);
             },
-            deleteCount(n, val) {
+            deleteCount(n) {
                 let count = 0;
                 this.detailCount.forEach(item => {
                     if(item) {
