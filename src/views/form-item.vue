@@ -67,7 +67,11 @@
                 type: Boolean,
                 default: false
             },
-            count: Number
+            count: Number,      //detail 行数
+            index: {
+                type: Number,
+                default: null
+            }     //当前数据在right_forms中 的 index
         },
         data() {
             return {
@@ -94,7 +98,7 @@
         },
         watch: {
             item_data(val) {
-                this.$emit('getData', this.form_item.type, this.form_item.token, val, this.count);
+                this.$emit('getData', this.form_item.type, this.form_item.token, val, this.count, this.index);
             }
         },
         destroyed() {

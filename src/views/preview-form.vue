@@ -18,8 +18,13 @@
                 <tbody>
                     <tr v-for="(item, n) in detailCount" v-if="item">
                         <td v-if="form_item.show_order">{{n + 1}}</td>
-                        <td v-for="item in form_item.children"><form-item ref="form-item-preview" :form_item="item" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
+                        <td v-for="item in form_item.children"><form-item ref="form-item-preview" :index="index" :form_item="item" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
                         <td><Icon type="plus-circled" size="30" @click.native="addCount"></Icon><Icon type="minus-circled" size="30" @click.native="deleteCount(n, item)"></Icon></td>
+                    </tr>
+                    <tr>
+                        <td v-if="form_item.show_order"></td>
+                        <td v-for="item in form_item.children"><span v-if="form_item.totals && form_item.totals.indexOf(item.token) !== -1">合计： {{total_results[item.token]}}</span></td>
+                        <td></td>
                     </tr>
                 </tbody>
             </table>
@@ -38,12 +43,14 @@
             formItem
         },
         props: {
-            form_item: Object
+            form_item: Object,
+            index: Number
         },
         data() {
             return {
                 detailCount: [true, true, true],
-                rowData: null
+                rowData: null,
+                total_results: {}
             }
         },
         created() {
@@ -69,7 +76,7 @@
                     this.$emit('delete', n, this.tokens);
                 }
                 this.$nextTick(() => {
-                    this.detailCount = this.detailCount.filter(item => {console.log(item)
+                    this.detailCount = this.detailCount.filter(item => {
                         return item;
                     });
                 });
@@ -90,9 +97,13 @@
              * @param val2 token
              * @param val3 value
              * @param val4 rowIndex
+             * @param val5 当前数据在right_forms中 的 index
              */
-            getDetailData(val1, val2, val3, val4) {
-                this.$emit('getData', val1, val2, val3, val4);
+            getDetailData(val1, val2, val3, val4, val5) {
+                this.$emit('getData', val1, val2, val3, val4, val5);
+            },
+            setTotal(token, val) {
+                this.$set(this.total_results, token, val);
             }
         },
         computed: {
@@ -104,7 +115,9 @@
                 return arr;
             }
         },
-        watch: {},
+        watch: {
+
+        },
         destroyed() {
 
         }

@@ -377,8 +377,8 @@
                     <!--12-->
                     <span v-if="currentType === 'detail'">
                         <div class="edit-title">合计字段</div>
-                        <CheckboxGroup v-model="currentOptions.sum">
-                            <Checkbox v-for="item in sumArr" :key="item.token" :label="item.token">{{item.title}}</Checkbox>
+                        <CheckboxGroup v-model="currentOptions.totals">
+                            <Checkbox v-for="item in totalsArr" :key="item.token" :label="item.token">{{item.title}}</Checkbox>
                         </CheckboxGroup>
                     </span>
                     <!--13-->
@@ -445,6 +445,8 @@
                     v-for="(item, index) in right_forms"
                     :key="index"
                     :form_item="item"
+                    :index="index"
+                    :total_results="total_results"
             >
             </preview-form>
         </Modal>
@@ -499,7 +501,7 @@
                 currentChildrenIndex: '',
                 currentRowIndex: '',
                 currentOptions: {
-                    sum: []
+                    totals: []
                 },
                 showEdit: false,
                 list: [],
@@ -532,7 +534,7 @@
                     date_formate: '时间格式',               //datetime年月日 时分 date年月日 month年月
                     math_formula: '运算式',
                     placeholder: '提示',
-                    sum_var: '合计项',
+                    totals: '合计项',
                     employee_change_type: '人员变动类型',     //select下拉菜单选择 fixed 固定值
                     employee_change_value: '固定项值',          //hire 转正 leave离职 change 调动 promote 晋升
                     employee_change_show: '是否显示',
@@ -546,6 +548,315 @@
                 mathFormulaArr: [],
                 mathFormulaTokenArr: [],                //token 运算式 数组
                 strArr: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
+                res_use: [
+                    {
+                        type: 'radio',
+                        title: '物品用途',
+                        token: 'use_for',
+                        list: [
+                            {
+                                label: '一般办公室用',
+                                value: 'office'
+                            },
+                            {
+                                label: '固定资产',
+                                value : 'fixed'
+                            },
+                            {
+                                label: '其他',
+                                value: 'other'
+                            }
+                        ]
+
+                    },
+                    {
+                        type: 'detail',
+                        title: '物品明细',
+                        totals: ['number'],
+                        children: [
+                            {
+                                type: 'input',
+                                title: '物品名称',
+                                token: 'name'
+                            },
+                            {
+                                type: 'input',
+                                title: '单位',
+                                token: 'unit'
+                            },
+                            {
+                                type: 'input',
+                                title: '领用数量',
+                                token: 'number'
+                            }
+                        ]
+                    }
+                ],              //物品领用单
+                total_results: {},               //详情表合计数汇总
+                expense: [
+                    {
+                        type: 'money',
+                        title: '报销金额',
+                        token: 'sum'
+                    },
+                    {
+                        type: 'number',
+                        title: '发票数量',
+                        token: 'receipt_number'
+                    },
+                    {
+                        type: 'select',
+                        title: '报销类别',
+                        token: 'genre',
+                        list: [
+                            {
+                                label: '招待费',
+                                value: 'entertainment'
+                            },
+                            {
+                                label: '活动费',
+                                value: 'activity'
+                            },
+                            {
+                                label: '其他',
+                                value: 'other'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'textarea',
+                        title: '报销原因',
+                        token: 'reason'
+                    },
+                    {
+                        type: 'file',
+                        title: '附件',
+                        token: 'file'
+                    }
+                ],                  //报销单
+                agreement: [
+                    {
+                        type: 'two',
+                        children: [
+                            {
+                                type: 'input',
+                                title: '编号',
+                                token: 'no'
+                            },
+                            {
+                                type: 'input',
+                                title: '合同名称',
+                                token: 'name'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'two',
+                        children: [
+                            {
+                                type: 'input',
+                                title: '对方单位名称',
+                                token: 'opposite_name'
+                            },
+                            {
+                                type: 'input',
+                                title: '对方负责人',
+                                token: 'opposite_leader'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'detail',
+                        title: '合同条款',
+                        children: [
+                            {
+                                type: 'input',
+                                title: '说明',
+                                token: 'explain'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'file',
+                        title: '附件',
+                        token: 'file'
+                    }
+                ],
+                purchase: [
+                    {
+                        type: 'textarea',
+                        title: '申请事由',
+                        token: 'reason'
+                    },
+                    {
+                        type: 'two',
+                        children: [
+                            {
+                                type: 'select',
+                                title: '采购类型',
+                                token: 'type',
+                                list: [
+                                    {
+                                        label: '办公用品',
+                                        value: 'office'
+                                    },
+                                    {
+                                        label: '生产原料',
+                                        value: 'production'
+                                    },
+                                    {
+                                        label: '其他',
+                                        value: 'other'
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'date',
+                                title: '期望交付日期',
+                                token: 'date_pay'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'detail',
+                        title: '采购明细',
+                        totals: ['sum']
+                        children: [
+                            {
+                                type: 'input',
+                                title: '名称',
+                                token: 'name'
+                            },
+                            {
+                                type: 'input',
+                                title: '规格',
+                                token: 'format'
+                            },
+                            {
+                                type: 'input',
+                                title: '单位',
+                                token: 'unit'
+                            },
+                            {
+                                type: 'number',
+                                title: '数量',
+                                token: 'number'
+                            },
+                            {
+                                type: 'money',
+                                title: '价格',
+                                token: 'price'
+                            },
+                            {
+                                type: 'math',
+                                title: '总价',
+                                token: 'sum',
+                                math_formula: ''
+                            }
+                        ]
+                    }
+
+                ],
+                business: [
+                    {
+                        type: 'input',
+                        title: '地点',
+                        token: 'place'
+                    },
+                    {
+                        type: 'textarea',
+                        title: '出差事由',
+                        token: 'reason'
+                    },
+                    {
+                        type: 'date',
+                        title: '开始',
+                        token: 'date_start'
+                    },
+                    {
+                        type: 'date',
+                        title: '结束',
+                        token: 'date_end'
+                    },
+                    {
+                        type: 'math',
+                        title: '时长',
+                        token: 'length'
+                    }
+                ],
+                out: [
+                    {
+                        type: 'input',
+                        title: '地点',
+                        token: 'place'
+                    },
+                    {
+                        type: 'textarea',
+                        title: '出差事由',
+                        token: 'reason'
+                    },
+                    {
+                        type: 'date',
+                        title: '日期',
+                        token: 'date'
+                    },
+                    {
+                        type: 'select',
+                        title: '类型',
+                        token: 'type',
+                        list: [
+                            {value:1,label:'正常打卡'},
+                            {value:2,label:'免上班卡'},
+                            {value:3,label:'免下班卡'},
+                            {value:4,label:'免全天卡'}
+                        ]
+                    }
+                ],
+                over_work: [
+                    {
+                        type: 'select',
+                        title: '类型',
+                        token: 'type',
+                        list: [
+                            {value:1,label:'工作日加班'},
+                            {value:2,label:'公休日加班'},
+                            {value:3,label:'节假日加班'}
+                        ]
+                    },
+                    {
+                        type: 'textarea',
+                        title: '加班事由',
+                        token: 'reason'
+                    },
+                    {
+                        type: 'date',
+                        title: '开始',
+                        token: 'date_start'
+                    },
+                    {
+                        type: 'date',
+                        title: '结束',
+                        token: 'date_end'
+                    },
+                    {
+                        type: 'math',
+                        title: '时长',
+                        token: 'length'
+                    }
+                ],
+                re_sign: [
+                    {
+                        type: 'date',
+                        title: '日期',
+                        token: 'date'
+                    },
+                    {
+                        type: 'textarea',
+                        title: '补签事由',
+                        token: 'reason'
+                    }
+                ],
+                
             }
         },
         mounted() {
@@ -648,46 +959,42 @@
                     this.$set(this.right_forms, index, {
                         type: 'three',
                         title: '',
-                        index: '',
                         token: '',
                         draggable: false,
                         children: []
                     });
                     for (let i = 0; i < 3; i++) {
-                        this.right_forms[index].children.push({type: '', title: '', index: '', draggable: true});
+                        this.right_forms[index].children.push({type: '', title: '', draggable: true});
                     }
                 }
                 else if(type === 'two' || type === 'detail'){
                     this.$set(this.right_forms, index, {
                         type: type,
                         title: '',
-                        index: '',
                         token: '',
                         draggable: false,
                         children: []
                     });
                     for (let i = 0; i < 2; i++) {
-                        this.right_forms[index].children.push({type: '', title: '', index: '', draggable: true});
+                        this.right_forms[index].children.push({type: '', title: '', draggable: true});
                     }
                 }
                 else if(type === 'table') {
                     this.$set(this.right_forms, index, {
                         type: 'table',
                         title: '',
-                        index: '',
                         token: '',
                         draggable: false,
                         children: []
                     });
                     for (let i = 0; i < 2; i++) {
-                        this.right_forms[index].children.push([{type: '', title: '', index: '', draggable: true},{type: '', title: '', index: '', draggable: true}]);
+                        this.right_forms[index].children.push([{type: '', title: '', draggable: true},{type: '', title: '', index: '', draggable: true}]);
                     }
                 }
                 else if(type === 'employee_change') {
                     this.$set(this.right_forms, index, {
                         type: 'employee_change',
                         title: '',
-                        index: '',
                         token: this.getRandomString(),
                         draggable: true,
                         children: []
@@ -696,7 +1003,6 @@
                         [{
                             type: 'employee_change_type',
                             title: '异动类型',
-                            index: '',
                             token: this.getRandomString() + 1,
                             list: this.employeeChangeType,
                             draggable: false,
@@ -706,7 +1012,6 @@
                         [{
                             type: 'employee_change_result',
                             title: '异动结果',
-                            index: '',
                             token: this.getRandomString() + 2,
                             list: [],
                             draggable: false
@@ -714,7 +1019,6 @@
                         [{
                             type: 'employee_change_effect',
                             title: '生效日期',
-                            index: '',
                             token: this.getRandomString() + 3,
                             list: [],
                             draggable: false
@@ -722,7 +1026,6 @@
                         [{
                             type: 'employee_change_reason',
                             title: '原因说明',
-                            index: '',
                             token: this.getRandomString() + 4,
                             list: [],
                             draggable: false
@@ -733,7 +1036,6 @@
                     this.$set(this.right_forms, index, {
                         type: 'salary_adjust',
                         title: '',
-                        index: '',
                         token: this.getRandomString(),
                         draggable: true,
                         children: []
@@ -742,7 +1044,6 @@
                         [{
                             type: 'salary_adjust_reason',
                             title: '调整原因',
-                            index: '',
                             token: this.getRandomString() + 1,
                             list: this.salaryAdjustReason,
                             draggable: false
@@ -750,7 +1051,6 @@
                         [{
                             type: 'salary_adjust_item',
                             title: '调整项目',
-                            index: '',
                             token: this.getRandomString() + 2,
                             list: [],
                             draggable: false
@@ -758,7 +1058,6 @@
                         [{
                             type: 'salary_adjust_result',
                             title: '调整结果',
-                            index: '',
                             token: this.getRandomString() + 3,
                             list: [],
                             draggable: false
@@ -766,7 +1065,6 @@
                         [{
                             type: 'salary_adjust_effect',
                             title: '生效日期',
-                            index: '',
                             token: this.getRandomString() + 4,
                             list: [],
                             draggable: false
@@ -1044,16 +1342,24 @@
              * @param val2 key(token)
              * @param val3 value
              * @param val4 index(detail 第 index 行数据)
+             * @param val5 当前数据在right_forms中 的 index
              *
              */
-            getData(val1, val2, val3, val4) {
+            getData(val1, val2, val3, val4, val5) {
+                if(['number', 'money'].indexOf(val1) !== -1) {
+                    val3 = parseFloat(val3);
+                }
                 if(val4 !== undefined) {
                     if(!this.testData[val2]) {
                         this.testData[val2] = [null, null, null];
                     }
                     this.testData[val2][val4] = val3;
-                }else if(['number', 'money'].indexOf(val1) !== -1) {
-                    this.testData[val2] = parseFloat(val3);
+                    let sum = 0;
+                    this.testData[val2].forEach(val => sum += val);
+                    sum = isNaN(sum) ? '' : sum;
+                    this.testData[val2 + '_total'] = sum;
+                    //TODO settotal
+                    this.$refs['preview_form'][val5].setTotal(val2, sum);
                 }
                 else {
                     this.testData[val2] = val3;
@@ -1124,7 +1430,7 @@
                             }
                         });
                         if (no_empty) {
-                            this.testData[item.token] = eval(item.math_formula);console.log(this.testData[item.token], typeof this.testData[item.token])
+                            this.testData[item.token] = eval(item.math_formula);
                             const result = isNaN(this.testData[item.token]) ? '' : this.testData[item.token];
                             this.$refs['preview_form'][index].$refs['form-item-preview'].setData(result);
                         }
@@ -1137,7 +1443,7 @@
             }
         },
         computed: {
-            sumArr() {
+            totalsArr() {
                 return this.currentIndex !== '' && !!this.right_forms[this.currentIndex].children ? this.right_forms[this.currentIndex].children.filter(item => ['money', 'number', 'math'].indexOf(item.type) !== -1) : [];
             },
             mathArr() {
@@ -1157,26 +1463,6 @@
             }
         },
         watch: {
-            count(val) {
-                this.width = 100 * val;
-                const center = (val - 1) / 2;
-                const arr = [];
-                for (let i = 0; i < val; i++) {
-                    const obj = {y1: 0, y2: 100};
-                    if(i < center) {
-                        obj.x1 = (i + 1) * this.width/(val + 1);
-                        obj.x2 = i * this.width/(val + 1);
-                    }else if(i === center) {
-                        obj.x1 = this.width / 2;
-                        obj.x2 = this.width / 2;
-                    }else {
-                        obj.x1 = (i + 1) * this.width/(val + 1);
-                        obj.x2 = (i + 2) * this.width/(val + 1);
-                    }
-                    arr.push(obj);
-                }
-                this.lines = arr;
-            },
         }
     };
 </script>
