@@ -16,9 +16,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(item, n) in detailCount" v-if="item">
+                    <tr v-for="(item, n) in detail_children" >
                         <td v-if="form_item.show_order">{{n + 1}}</td>
-                        <td v-for="chi in form_item.children"><form-item ref="form-item-preview" :index="index" :form_item="chi" @getData="getDetailData" :count="n" :hide_title="true"></form-item></td>
+                        <td v-for="chi in item"><form-item ref="form-item-preview" :index="index" :form_item="chi" @getData="getDetailData" :hide_title="true"></form-item></td>
                         <td><Icon type="plus-circled" size="30" @click.native="addCount"></Icon><Icon type="minus-circled" size="30" @click.native="deleteCount(n)"></Icon></td>
                     </tr>
                     <tr>
@@ -50,17 +50,46 @@
             return {
                 detailCount: [true, true, true],
                 rowData: null,
-                total_results: {}
+                total_results: {},
+                detail_children: [],
+                formula_tokens: []
             }
         },
         created() {
 
         },
         mounted() {
+            if(this.form_item.type === 'detail') {
+                const arr = [];
 
+                this.detailCount.forEach((val, index) => {
+                    const children = JSON.parse(JSON.stringify(this.form_item.children));
+
+                    children.forEach((item, ins) => {
+                        if(item.type === 'math') {
+                            item.math_formula_arr.forEach((v,i) => {
+                                if(this.tokens.indexOf(v.substr(14)) !== -1) {
+                                    children[ins].math_formula_arr[i] = v+ index;
+                                }
+                            });
+                            children[ins].math_formula = children[ins].math_formula_arr.join(' ');
+                        }
+
+                        item.token += index;
+                    });
+                    arr.push(children)
+                })
+               this.detail_children = arr;
+            }
         },
         methods: {
             addCount() {
+                const index = this.detail_children.length;
+                const children = JSON.parse(JSON.stringify(this.form_item.children));
+                children.forEach(item => {
+                    item.token += index;
+                });
+                this.detail_children.push(children);
                 this.detailCount.push(new Date().getTime());
                 this.$emit('add', this.tokens);
             },
@@ -71,8 +100,9 @@
                         count++;
                     }
                 });
-                if(count) {
+                if(count > 1) {
                     this.$set(this.detailCount, n, false);
+                    this.detail_children.splice(n, 1);
                     this.$emit('delete', n, this.tokens);
                 }
                 this.$nextTick(() => {
@@ -96,11 +126,10 @@
              * @param val1 type
              * @param val2 token
              * @param val3 value
-             * @param val4 rowIndex
-             * @param val5 当前数据在right_forms中 的 index
+             * @param val4 当前数据在right_forms中 的 index
              */
-            getDetailData(val1, val2, val3, val4, val5) {
-                this.$emit('getData', val1, val2, val3, val4, val5);
+            getDetailData(val1, val2, val3, val4) {
+                this.$emit('getData', val1, val2, val3, val4, this.detail_children, this.formula_tokens);
             },
             setTotal(token, val) {
                 this.$set(this.total_results, token, val);
@@ -108,11 +137,7 @@
         },
         computed: {
             tokens() {
-                let arr = [];
-                this.form_item.children.forEach(item => {
-                    arr.push(item.token);
-                });
-                return arr;
+                return this.form_item.children.map(item => item.token).filter(item => item !== '');
             }
         },
         watch: {

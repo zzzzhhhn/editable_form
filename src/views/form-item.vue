@@ -67,7 +67,6 @@
                 type: Boolean,
                 default: false
             },
-            count: Number,      //detail 行数
             index: {
                 type: Number,
                 default: null
@@ -77,14 +76,11 @@
             return {
                 file: null,
                 item_data: null,
-                a: true
             }
         },
         created() {
-            if(this.a) {
-                this.a = false;
-                this.form_item.token = this.form_item.token + Math.ceil(Math.random()*999);
-            }
+
+
         },
         mounted() {
 
@@ -102,8 +98,8 @@
         },
         watch: {
             item_data(val) {
-                this.$emit('getData', this.form_item.type, this.form_item.token, val, this.count, this.index);
-            }
+                this.$emit('getData', this.form_item.type, this.form_item.token, val, this.index);
+            },
         },
         destroyed() {
 

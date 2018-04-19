@@ -435,7 +435,7 @@
 
         <Checkbox v-model="showPreview">预览</Checkbox>
 
-        <Modal v-model="showPreview" title="预览" width="700">
+
             <preview-form
                     ref="preview_form"
                     v-if="showPreview"
@@ -449,7 +449,7 @@
                     :total_results="total_results"
             >
             </preview-form>
-        </Modal>
+
     </div>
 
 
@@ -533,6 +533,7 @@
                     num_format: '数据类型',             //number 数值 percent 百分比
                     date_formate: '时间格式',               //datetime年月日 时分 date年月日 month年月
                     math_formula: '运算式',
+                    math_formula_arr: [],
                     placeholder: '提示',
                     totals: '合计项',
                     employee_change_type: '人员变动类型',     //select下拉菜单选择 fixed 固定值
@@ -1341,29 +1342,35 @@
              * @param val1 type
              * @param val2 key(token)
              * @param val3 value
-             * @param val4 index(detail 第 index 行数据)
-             * @param val5 当前数据在right_forms中 的 index
-             *
+             * @param val4 当前数据在right_forms中 的 index
+             * TODO detail 数组变单个变量
+             * @param val5 detail children
+             * @param val6 formula_tokens
              */
-            getData(val1, val2, val3, val4, val5) {
+            getData(val1, val2, val3, val4, val5, val6) {
                 if(['number', 'money'].indexOf(val1) !== -1) {
                     val3 = parseFloat(val3);
                 }
                 if(val4 !== undefined) {
-                    if(!this.testData[val2]) {
-                        this.testData[val2] = [null, null, null];
-                    }
-                    this.testData[val2][val4] = val3;
+
+                    this.testData[val2] = val3;
+
                     let sum = 0;
-                    this.testData[val2].forEach(val => sum += val);
+                    const token = val2.substr(0, 13);
+                    for(let key in this.testData) {
+                        if(key.indexOf(token) !== -1 && key.length === 14) {
+                            sum += this.testData[key];
+                        }
+                    }
+
                     sum = isNaN(sum) ? '' : sum;
-                    this.testData[val2 + '_total'] = sum;
-                    this.$refs['preview_form'][val5].setTotal(val2, sum);
+                    this.testData[token + '_total'] = sum;
+                    this.$refs['preview_form'][val4].setTotal(token, sum);
                 }
                 else {
                     this.testData[val2] = val3;
                 }
-                this.doMath();
+                this.doMath(val4, val5, val6);
             },
             /**
              * 删除明细表行
@@ -1412,13 +1419,36 @@
             makeFormulaString() {
                 this.mathFormula = this.mathFormulaArr.join(' ');
                 this.currentOptions.math_formula = this.mathFormulaTokenArr.join(' ');
+                this.currentOptions.math_formula_arr = this.mathFormulaTokenArr;
             },
             /**
              * 运算控件自动运算
              */
-            doMath() {
+            doMath(index,children, formula_tokens) {
+                const that = this;
+                if(index !== undefined && children !== undefined) {
+                    children.forEach((row, rowIndex) => {
+                        row.forEach((item, i) => {
+                            if(item.type === 'math') {
+                                let no_empty = true;
+                                formula_tokens.forEach(val => {
+                                    if(this.testData[val] === undefined) {
+                                        no_empty = false;
+                                    }
+                                });
+                                if (no_empty) {
+                                    this.testData[item.token] = eval(item.math_formula);
+                                    const result = isNaN(this.testData[item.token]) ? '' : this.testData[item.token];
+                                    this.$refs['preview_form'][index].$refs['form-item-preview'][rowIndex * row.length + i].setData(result);
+                                }
+                            }
+                        });
+
+                    });
+                }
+
                 this.right_forms.forEach((item, index) => {
-                    const that = this;
+
 
                     if(item.type === 'math') {
                         const arr = item.math_formula.match(/[a-z]{13}/g);
@@ -1433,13 +1463,8 @@
                             const result = isNaN(this.testData[item.token]) ? '' : this.testData[item.token];
                             this.$refs['preview_form'][index].$refs['form-item-preview'].setData(result);
                         }
-
-                    }else if(item.type === 'detail'){
-                        item.children.forEach((chi, chiIndex) => {
-                            if(chi.type === 'math') {
-
-                            }
-                        })
+                    }else if(item.type === 'detail') {
+                        //TODO 明细表外触发计算
                     }
                 });
             },
