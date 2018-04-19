@@ -52,7 +52,6 @@
                 rowData: null,
                 total_results: {},
                 detail_children: [],
-                formula_tokens: [],
                 delete_count: 0
             }
         },
@@ -81,6 +80,8 @@
                     arr.push(children)
                 })
                this.detail_children = arr;
+
+                this.$emit('setDetailMath',this.index, this.detail_children)
             }
         },
         methods: {
@@ -92,6 +93,7 @@
                 });
                 this.detail_children.push(children);
                 this.detailCount.push(new Date().getTime());
+                this.$emit('setDetailMath',this.index, this.detail_children)
             },
             deleteCount(n) {
                 let count = 0;
@@ -107,7 +109,7 @@
                     this.delete_count++;
                 }
 
-
+                this.$emit('setDetailMath',this.index, this.detail_children)
             },
             /**
              * 详情表参数
@@ -126,7 +128,7 @@
              * @param val4 当前数据在right_forms中 的 index
              */
             getDetailData(val1, val2, val3, val4) {
-                this.$emit('getData', val1, val2, val3, val4, this.detail_children, this.formula_tokens);
+                this.$emit('getData', val1, val2, val3, val4, this.detail_children);
             },
             setTotal(token, val) {
                 this.$set(this.total_results, token, val);

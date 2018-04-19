@@ -446,6 +446,7 @@
                     :form_item="item"
                     :index="index"
                     :total_results="total_results"
+                    @setDetailMath="getDetailMath"
             >
             </preview-form>
 
@@ -857,7 +858,7 @@
                         token: 'reason'
                     }
                 ],
-
+                detailData: {},             //明细表改造后的children数据
             }
         },
         mounted() {
@@ -1343,30 +1344,24 @@
              * @param val2 key(token)
              * @param val3 value
              * @param val4 当前数据在right_forms中 的 index
-             * TODO detail 数组变单个变量
              * @param val5 detail children
-             * @param val6 formula_tokens
              */
-            getData(val1, val2, val3, val4, val5, val6) {
+            getData(val1, val2, val3, val4, val5) {
                 if(['number', 'money'].indexOf(val1) !== -1) {
                     val3 = parseFloat(val3);
                 }
                 if(val4 !== undefined) {
-
                     this.testData[val2] = val3;
-
                     this.doSumTotal(val2, val4)
-
-                }
-                else {
+                } else {
                     this.testData[val2] = val3;
                 }
-                this.doMath(val4, val5, val6);
+                this.doMath(val4, val5);
             },
             /**
              * val1 token
              *  val2 index
-             *
+             * 明细表列合计
              * */
             doSumTotal(val1, val2) {
                 let sum = 0;
@@ -1433,52 +1428,46 @@
             /**
              * 运算控件自动运算
              */
-            doMath(index,children, formula_tokens) {
+            doMath(index,children) {
                 const that = this;
                 if(index !== undefined && children !== undefined) {
-                    children.forEach((row, rowIndex) => {
-                        row.forEach((item, i) => {
-                            if(item.type === 'math') {
-                                let no_empty = true;
-                                formula_tokens.forEach(val => {
-                                    if(this.testData[val] === undefined) {
-                                        no_empty = false;
-                                    }
-                                });
-                                if (no_empty) {
-                                    this.testData[item.token] = eval(item.math_formula);
-                                    const result = isNaN(this.testData[item.token]) ? '' : this.testData[item.token];
-                                    this.$refs['preview_form'][index].$refs['form-item-preview'][rowIndex * row.length + i].setData(result);
-                                }
-                            }
-                        });
-
-                    });
+                    this.doDetailMath(index,children);
                 }
 
                 this.right_forms.forEach((item, index) => {
-
-
                     if(item.type === 'math') {
-                        const arr = item.math_formula.match(/[a-z]{13}/g);
-                        let no_empty = true;
-                        arr.forEach(val => {
-                            if(this.testData[val] === undefined) {
-                                no_empty = false;
-                            }
-                        });
-                        if (no_empty) {
-                            this.testData[item.token] = eval(item.math_formula);
-                            const result = isNaN(this.testData[item.token]) ? '' : this.testData[item.token];
-                            this.$refs['preview_form'][index].$refs['form-item-preview'].setData(result);
-                        }
+                        const result = eval(item.math_formula);
+                        this.testData[item.token] = isNaN(result) ? '' : result;
+                        this.$refs['preview_form'][index].$refs['form-item-preview'].setData(this.testData[item.token]);
                     }else if(item.type === 'detail') {
                         //TODO 明细表外触发计算
+                        const _children = this.detailData[index];
+                        this.doDetailMath(index, _children);
                     }
+                });
+            },
+            doDetailMath(index, children) {
+                const that = this;
+                children.forEach((row, rowIndex) => {
+                    row.forEach((item, i) => {
+                        if(item.type === 'math') {
+                            const result = eval(item.math_formula);
+                            this.testData[item.token] = isNaN(result) ? '' : result;
+                            this.$refs['preview_form'][index].$refs['form-item-preview'][rowIndex * row.length + i].setData(this.testData[item.token]);
+                        }
+                    });
                 });
             },
             getRandomString() {
                 return new Date().getTime().toString().split('').map(val => this.strArr[val]).join('');
+            },
+            /**
+             *  获取明细表改造后children数据
+             * @param index
+             * @param children
+             */
+            getDetailMath(index, children) {
+                this.detailData[index] = children;
             }
         },
         computed: {
