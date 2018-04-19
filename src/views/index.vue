@@ -441,7 +441,6 @@
                     v-if="showPreview"
                     @getData="getData"
                     @delete="onDeleteDetail"
-                    @add="onAddDetail"
                     v-for="(item, index) in right_forms"
                     :key="index"
                     :form_item="item"
@@ -459,6 +458,7 @@
     import previewForm from './preview-form.vue';
     import formItem from './form-item.vue';
     import Input from "../../node_modules/iview/src/components/input/input.vue";
+    import index from "../store/index";
     export default {
         components: {
             Input,
@@ -1355,17 +1355,8 @@
 
                     this.testData[val2] = val3;
 
-                    let sum = 0;
-                    const token = val2.substr(0, 13);
-                    for(let key in this.testData) {
-                        if(key.indexOf(token) !== -1 && key.length === 14) {
-                            sum += this.testData[key];
-                        }
-                    }
+                    this.doSumTotal(val2, val4)
 
-                    sum = isNaN(sum) ? '' : sum;
-                    this.testData[token + '_total'] = sum;
-                    this.$refs['preview_form'][val4].setTotal(token, sum);
                 }
                 else {
                     this.testData[val2] = val3;
@@ -1373,24 +1364,42 @@
                 this.doMath(val4, val5, val6);
             },
             /**
+             * val1 token
+             *  val2 index
+             *
+             * */
+            doSumTotal(val1, val2) {
+                let sum = 0;
+                if(val1 !== undefined) {
+                    const token = val1.substr(0, 13);
+                    if(this.right_forms[val2].totals && this.right_forms[val2].totals.indexOf(token) !== -1) {
+                        for(let key in this.testData) {
+                            if(key.indexOf(token) !== -1 && key.length === 14) {
+                                sum += this.testData[key];
+                            }
+                        }
+
+                        sum = isNaN(sum) ? '' : sum;
+                        this.testData[token + '_total'] = sum;
+                        this.$refs['preview_form'][val2].setTotal(token, sum);
+                    }
+                }
+            },
+            /**
              * 删除明细表行
              * @param n
              * @param token
              */
-            onDeleteDetail(n,  tokens) {
-                this.onAddDetail(tokens);
+            onDeleteDetail(n,  tokens, index) {
                 tokens.forEach(item => {
-                    this.testData[item].splice(n, 1);
+                     delete this.testData[item + n];
+                });
+                this.right_forms[index].children.forEach(item => {
+                    this.doSumTotal(item.token, index);
                 });
 
             },
-            onAddDetail(tokens) {
-                tokens.forEach(item => {
-                    if(!this.testData[item]) {
-                        this.testData[item] = [null, null, null];
-                    }
-                });
-            },
+
             /**
              * 生成计算式
              * @param val1 title

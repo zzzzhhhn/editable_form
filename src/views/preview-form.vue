@@ -16,8 +16,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(item, n) in detail_children" >
-                        <td v-if="form_item.show_order">{{n + 1}}</td>
+                    <tr v-for="(item, n) in detail_children" v-if="detailCount[n]">
+                        <td v-if="form_item.show_order">{{n + 1 - delete_count}}</td>
                         <td v-for="chi in item"><form-item ref="form-item-preview" :index="index" :form_item="chi" @getData="getDetailData" :hide_title="true"></form-item></td>
                         <td><Icon type="plus-circled" size="30" @click.native="addCount"></Icon><Icon type="minus-circled" size="30" @click.native="deleteCount(n)"></Icon></td>
                     </tr>
@@ -52,7 +52,8 @@
                 rowData: null,
                 total_results: {},
                 detail_children: [],
-                formula_tokens: []
+                formula_tokens: [],
+                delete_count: 0
             }
         },
         created() {
@@ -91,7 +92,6 @@
                 });
                 this.detail_children.push(children);
                 this.detailCount.push(new Date().getTime());
-                this.$emit('add', this.tokens);
             },
             deleteCount(n) {
                 let count = 0;
@@ -102,14 +102,11 @@
                 });
                 if(count > 1) {
                     this.$set(this.detailCount, n, false);
-                    this.detail_children.splice(n, 1);
-                    this.$emit('delete', n, this.tokens);
+                    this.$emit('delete', n, this.tokens, this.index);
+                    this.detail_children[n] = [];
+                    this.delete_count++;
                 }
-                this.$nextTick(() => {
-                    this.detailCount = this.detailCount.filter(item => {
-                        return item;
-                    });
-                });
+
 
             },
             /**
